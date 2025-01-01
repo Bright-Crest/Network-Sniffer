@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block style %}
+
+{% endblock %}
+
+{% block content %}
+  <h1>Test SSE with m-client</h1>
+  <div>
+    <div>
+      <button id="sseStart" class="btn btn-outline-primary" type="button">开始</button>
+      <button id="sseStop" class="btn btn-outline-primary" type="button">终止</button>
+    </div>
+    <div>
+      <form id="sseForm" name="sseForm" method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="sseData" />
+      </form>
+    </div>
+  </div>
+  <div id="output"></div>
+{% endblock %}
+
+{% block script %}
+  <script type="text/javascript">
+    //  function sendXhr(content, content_type = 'application/json') {
+    //  // 不刷新页面提交
+    //  let xhr = new XMLHttpRequest()
+    //  xhr.open('POST', '{% url "sniffer:test_sse" %}')
+    //  xhr.setRequestHeader('Content-Type', content_type)
+    //  var msg
+    //  if (content_type === 'text/html') {
+    //      msg = new FormData()
+    //      msg.append('type', content.type)
+    //      msg.append('data', content.data)
+    //  } else if (content_type === 'application/json') {
+    //      msg = JSON.stringify(content)
+    //  }
+    //  xhr.send(msg)
+    //
+    //  // 只是方便控制台检查是否提交成功
+    //  xhr.onreadystatechange = function () {
+    //      if (xhr.readyState === XMLHttpRequest.DONE) {
+    //      if (xhr.status === 200) {
+    //          console.log('Form submitted successfully')
+    //      } else {
+    //          console.log('Error submitting form')
+    //      }
+    //      }
+    //  }
+    //  }
+    
+    function sendXhr(msg, responseType = 'json') {
+      // 不刷新页面提交
+      let xhr = new XMLHttpRequest()
+      xhr.open('POST', '{% url "sniffer:test_sse" %}')
+      xhr.responseType = responseType
+      if (responseType === 'text') {
+        xhr.setRequestHeader('Content-Type', 'text/plain')
+      }
+      xhr.send(msg)
+    
+      // 只是方便控制台检查是否提交成功
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            console.log('XHR submitted successfully')
+          } else {
+            console.log('Error submitting XHR')
+          }
+        }
+      }
+    }
+    
+    function createContent(type, data) {
+      let content = {
+        type: type,
+        data: data
+      }
+      return content
+    }
+    
+    function sendFormXhr(formData) {
+      // 不刷新页面提交
+      let xhr = new XMLHttpRequest()
+      xhr.open('POST', '{% url "sniffer:test_sse" %}')
+      xhr.send(formData)
+    
+      // 只是方便控制台检查是否提交成功
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            console.log('XHR submitted successfully')
+          } else {
+            console.log('Error submitting XHR')
+          }
+        }
+      }
+    }
+    
+    function fillFrom(id, dict) {
+      var form = window.document.getElementById(id)
+      var formData = new FormData(form)
+      for (var key in dict) {
+        formData.set(key, dict[key])
+      }
+      return formData
+    }
+    
+    $(document).ready(function () {
+      // $('#sseStart').click(sendXhr(createContent("sse", "start")))
+      // $('#sseStop').click(sendXhr(createContent("sse", "stop")))
+      // $('#sseStart').click(sendXhr(new FormData(window.document.getElementById('sseStartForm')), 'text/html'))
+      // $('#sseStop').click(sendXhr(new FormData(window.document.getElememtById('sseStopForm')), 'text/html'))
+      // $('#sseStart').click(sendFormXhr("sseStartForm"))
+      // $('#sseStop').click(sendFormXhr("sseStopForm"))
+      // $('#sseStart').click(sendXhr(createContent("sse", "start"), 'text/html'))
+      // $('#sseStop').click(sendXhr(createContent("sse", "stop"), 'text/html'))
+      // $('#sseStart').click(sendXhr("start", 'text'))
+      // $('#sseStop').click(sendXhr("stop", 'text'))
+      $('#sseStart').click(function () {
+        sendFormXhr(fillFrom('sseForm', { sseData: 'start' }))
+      })
+      $('#sseStop').click(function () {
+        sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }))
+      })
+    })
+    
+    window.onload = function () {
+      // 禁用“确认重新提交表单”
+      window.history.replaceState(null, null, window.location.href)
+    }
+  </script>
+{% endblock %}

@@ -1,5 +1,9 @@
 .vscode/
+# django collected static files
 server/.tmp_static/
+# internal tests
+.test*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

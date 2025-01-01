@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block style %}
+  <script src="{% static 'django_eventstream/eventsource.min.js' %}"></script>
+  <script src="{% static 'django_eventstream/reconnecting-eventsource.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+  <h1>Test SSE with self using html rendering</h1>
+  <div>
+    <div>
+      <button id="sseStart" class="btn btn-outline-primary" type="button">开始</button>
+      <button id="sseStop" class="btn btn-outline-primary" type="button">终止</button>
+    </div>
+    <div>
+      <form id="sseForm" name="sseForm" method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="sseData" />
+      </form>
+    </div>
+  </div>
+  <div id="output"></div>
+{% endblock %}
+
+{% block script %}
+    <script type="text/javascript">
+      var logMessage = function (s) {
+        var outputDiv = document.getElementById('output');
+        outputDiv.innerHTML = outputDiv.innerHTML + s + '<br />';
+      };
+
+      var start = function () {
+        logMessage('connecting...');
+
+{% if last_id %}
+        var es = new ReconnectingEventSource('{{ sse_url|safe }}', {
+          lastEventId: '{{ last_id }}'
+        });
+{% else %}
+        var es = new ReconnectingEventSource('{{ sse_url|safe }}');
+{% endif %}
+
+        es.onopen = function () {
+          logMessage('connected');
+        };
+
+        es.onerror = function () {
+          logMessage('connection error');
+        };
+
+        es.addEventListener('stream-reset', function (e) {
+          e = JSON.parse(e.data);
+          logMessage('stream reset: ' + JSON.stringify(e.channels));
+        }, false);
+
+        es.addEventListener('stream-error', function (e) {
+          // hard stop
+          es.close();
+          e = JSON.parse(e.data);
+          logMessage('stream error: ' + e.condition + ': ' + e.text);
+        }, false);
+
+        es.addEventListener('message', function (e) {
+          logMessage('message: ' + e.data);
+        }, false);
+      };
+
+    function sendFormXhr(formData) {
+      // 不刷新页面提交
+      let xhr = new XMLHttpRequest()
+      xhr.open('POST', '{% url "sniffer:test_sse" %}')
+      xhr.send(formData)
+    
+      // 只是方便控制台检查是否提交成功
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            console.log('XHR submitted successfully')
+          } else {
+            console.log('Error submitting XHR')
+          }
+        }
+      }
+    }
+    
+    function fillFrom(id, dict) {
+      var form = window.document.getElementById(id)
+      var formData = new FormData(form)
+      for (var key in dict) {
+        formData.set(key, dict[key])
+      }
+      return formData
+    }
+    
+    $(document).ready(function () {
+      $('#sseStart').click(function () {
+        sendFormXhr(fillFrom('sseForm', { sseData: 'start' }))
+      })
+      $('#sseStop').click(function () {
+        sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }))
+      })
+    })
+    
+    window.onload = function () {
+      // 禁用“确认重新提交表单”
+      window.history.replaceState(null, null, window.location.href)
+      
+      start();
+    }
+    </script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block style %}
+
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-3">
+    <h1>抓包结果</h1>
+    <div>
+      <div>
+        <button id="sseStart" class="btn btn-outline-primary" type="button">重新开始捕获分组</button>
+        <button id="sseStop" class="btn btn-outline-primary" type="button">停止捕获分组</button>
+      </div>
+      <div>
+        <form id="sseForm" name="sseForm" method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="sseData" />
+        </form>
+      </div>
+    </div>
+    <div>
+      {% for packet in packets %}
+        <div>
+          <p>{{ packet }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script type="text/javascript">
+    function sendFormXhr(formData, url) {
+      // 不刷新页面提交
+      let xhr = new XMLHttpRequest()
+      xhr.open('POST', url)
+      xhr.send(formData)
+    
+      // 只是方便控制台检查是否提交成功
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            console.log('XHR submitted successfully')
+          } else {
+            console.log('Error submitting XHR')
+          }
+        }
+      }
+    }
+    
+    function fillFrom(id, dict) {
+      var form = window.document.getElementById(id)
+      var formData = new FormData(form)
+      for (var key in dict) {
+        formData.set(key, dict[key])
+      }
+      return formData
+    }
+    
+    $(document).ready(function () {
+      $('#sseStart').click(function () {
+        sendFormXhr(fillFrom('sseForm', { sseData: 'start' }), '{% url "sniffer:index" %}')
+      })
+      $('#sseStop').click(function () {
+        sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }), '{% url "sniffer:index" %}')
+      })
+    })
+    
+    window.onload = function () {
+      // 禁用“确认重新提交表单”
+      window.history.replaceState(null, null, window.location.href)
+    }
+  </script>
+{% endblock %}

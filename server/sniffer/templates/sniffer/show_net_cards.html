@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block style %}
+
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-3">
+    <h1>选择网卡</h1>
+    <div>
+      {% autoescape off %}
+      <div>
+        <p>{{ net_cards_header }}</p>
+      </div>
+      {% for net_cards in net_cards %}
+        <div>
+          <p>{{ net_cards }}</p>
+        </div>
+      {% endfor %}
+      {% endautoescape %}
+    </div>
+    <div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-control">
+          <div><label class="form-label">网卡名称: <input type="text" name="net_card" /></label></div>
+          <div><label class="form-label">捕获过滤条件: <input type="text" name="filter" /></label></div>
+          <button type="submit" class="btn btn-primary">开始监听</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}
