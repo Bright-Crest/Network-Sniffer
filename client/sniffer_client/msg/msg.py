@@ -10,6 +10,7 @@ class MsgType(Enum):
     NET_CARDS = "net_cards"
     SNIFF_CONFIG = "sniff_config"
     PACKET = "packet"
+    SESSION_ERROR = "session_error" # e.g. sniffing session not found or session cannot be restarted
 
 
 def send_msg(msg_type: MsgType, msg, url, is_post, timeout=None):
@@ -17,10 +18,9 @@ def send_msg(msg_type: MsgType, msg, url, is_post, timeout=None):
     response = None
     if is_post:
         response = requests.post(url, data=data, timeout=timeout)
-        Logger.debug(f"request url: {response.url}; data: {data}")
+        Logger.debug(f"request data: {data}")
     else:
         response = requests.get(url, params=data, timeout=timeout)
-        Logger.debug(f"request url: {response.url}")
     Logger.debug(f"response: {response}")
     return response
 

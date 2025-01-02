@@ -32,7 +32,7 @@ class MultiStoppableThreads():
         self._daemon = daemon
         self._threads = dict()
 
-    def start(self, id, *args, **kwargs):
+    def start(self, id, args=None, kwargs=None):
         if id in self._threads:
             self.stop(id)
         self._threads[id] = StoppableThread(target=self._callback, daemon=self._daemon, args=args, kwargs=kwargs)

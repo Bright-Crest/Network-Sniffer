@@ -4,7 +4,7 @@ from scapy.layers.l2 import Ether
 import threading 
 import queue
 
-import utils
+from utils import utils
 
 
 class Sniffer():
@@ -41,72 +41,88 @@ class Sniffer():
         self._sniff_thread.stop()
 
 
+def export_packet(packet):
+    # type: (Any) -> str
+    import zlib
+    return base64.b64encode(zlib.compress(pickle.dumps(packet, 2), 9)).decode()
+
+
+def import_packet(packet):
+    # type: (str) -> Any
+    import zlib
+    return pickle.loads(zlib.decompress(base64.b64decode(packet.strip())))
+
+
 def get_net_cards():
-    # return NetworkInterfaceDict()
-    return ifaces
+    return _ifaces2dict(ifaces)
 
 
-def handle_packet(packet: Packet):
-    import string
-    # Handling each packet and extract information from each layer
-    packet_data = ""
-    # Ether Layer : D L
-    if packet.haslayer(Ether):
-        packet_data += f"MAC Source: {packet[Ether].src}\n"
-        packet_data += f"MAC Destination: {packet[Ether].dst}\n"
-        packet_data += f"Ethernet Type: 0x{packet[Ether].type:04x}\n"
+def _ifaces2dict(interfaces: NetworkInterfaceDict):
+    ret = dict()
+    for iface_name in sorted(interfaces.data):
+        dev = interfaces.data[iface_name]
+        if not dev.is_valid():
+            continue
+        prov = dev.provider
+        mac = dev.mac
+        if conf.manufdb and mac:
+            mac = conf.manufdb._resolve_MAC(mac)
 
-    # IP Layer : N
-    if packet.haslayer(IP):
-        packet_data += "\nIP - Layer\n"
-        packet_data += f"IP Version: {packet[IP].version}\n"
-        packet_data += f"Source IP: {packet[IP].src}\n"
-        packet_data += f"Destination IP: {packet[IP].dst}\n"
-
-        if packet.haslayer(TCP):
-            packet_data += "\nTCP - Layer\n"
-            packet_data += f"Source Port: {packet[TCP].sport}\n"
-            packet_data += f"Destination Port: {packet[TCP].dport}\n"
-            packet_data += f"Flags: {packet[TCP].flags}\n"
-
-        if packet.haslayer(UDP):
-            packet_data += "\nUDP - Layer\n"
-            packet_data += f"Source Port: {packet[UDP].sport}\n"
-            packet_data += f"Destination Port: {packet[UDP].dport}\n"
-            packet_data += f"Length: {packet[UDP].len}\n"
-
-            # ICMP Analysis
-        elif packet.haslayer(ICMP):
-            icmp = packet[ICMP]
-            packet_data += "\nICMP - Layer\n"
-            packet_data += f"Type: {icmp.type}\n"
-            packet_data += f"Code: {icmp.code}\n"
-
-    if packet.haslayer(Raw):
-        data = ""
-        for b in bytes(packet[Raw]):
-            if chr(b) in string.printable:
-                data += chr(b)
-            else:
-                data += "."
-        packet_data += data
-    print("-" * 50)
-    print(packet_data)
-    print("-" * 50)
+        # headers: ("Index", "Name", "MAC", "IPv4", "IPv6")
+        ret[dev.index] = {
+            "Index": str(dev.index),
+            "Name": dev.description,
+            "MAC": mac or "",
+            "IPv4": dev.ips[4],
+            "IPv6": dev.ips[6],
+        }
+    return ret
 
 
-# if __name__ == "__main__":
-#     import sys
-#     filter = ""
-#     if len(sys.argv) == 2:
-#         filter = sys.argv[1]
-#     elif len(sys.argv) > 2:
-#         print("Usage: python3 sniff.py [filter]")
-#         exit(0)
-#     try:
-#         print(ifaces)
-#         iface = ""
-#         packets = sniff(iface=iface, prn=handle_packet, filter=filter, count=10)
-#     except Scapy_Exception:
-#         print("Bad filter. Program terminated")
-#     print(packets)
+# def handle_packet(packet: Packet):
+#     import string
+#     # Handling each packet and extract information from each layer
+#     packet_data = ""
+#     # Ether Layer : D L
+#     if packet.haslayer(Ether):
+#         packet_data += f"MAC Source: {packet[Ether].src}\n"
+#         packet_data += f"MAC Destination: {packet[Ether].dst}\n"
+#         packet_data += f"Ethernet Type: 0x{packet[Ether].type:04x}\n"
+
+#     # IP Layer : N
+#     if packet.haslayer(IP):
+#         packet_data += "\nIP - Layer\n"
+#         packet_data += f"IP Version: {packet[IP].version}\n"
+#         packet_data += f"Source IP: {packet[IP].src}\n"
+#         packet_data += f"Destination IP: {packet[IP].dst}\n"
+
+#         if packet.haslayer(TCP):
+#             packet_data += "\nTCP - Layer\n"
+#             packet_data += f"Source Port: {packet[TCP].sport}\n"
+#             packet_data += f"Destination Port: {packet[TCP].dport}\n"
+#             packet_data += f"Flags: {packet[TCP].flags}\n"
+
+#         if packet.haslayer(UDP):
+#             packet_data += "\nUDP - Layer\n"
+#             packet_data += f"Source Port: {packet[UDP].sport}\n"
+#             packet_data += f"Destination Port: {packet[UDP].dport}\n"
+#             packet_data += f"Length: {packet[UDP].len}\n"
+
+#             # ICMP Analysis
+#         elif packet.haslayer(ICMP):
+#             icmp = packet[ICMP]
+#             packet_data += "\nICMP - Layer\n"
+#             packet_data += f"Type: {icmp.type}\n"
+#             packet_data += f"Code: {icmp.code}\n"
+
+#     if packet.haslayer(Raw):
+#         data = ""
+#         for b in bytes(packet[Raw]):
+#             if chr(b) in string.printable:
+#                 data += chr(b)
+#             else:
+#                 data += "."
+#         packet_data += data
+#     print("-" * 50)
+#     print(packet_data)
+#     print("-" * 50)

@@ -39,6 +39,7 @@ class SSEType(Enum):
     ERROR = 'error'
     START = 'start'
     STOP = 'stop'
+    RESTART = 'restart'
 
 
 def sse_url(server_url, sse_suffix):
@@ -54,15 +55,15 @@ def connect(url):
 
 def parse_event(event: Event, channel):
     if event.event == 'message' and event.id.rsplit(':', 1)[0] == channel:
-        sse_type = event.data.strip("'").strip('"')
-        if sse_type == SSEType.START.value:
-            return SSEType.START
-        elif sse_type == SSEType.STOP.value:
-            return SSEType.STOP
-        else:
-            return SSEType.ERROR
+        event_data = json.loads(event.data.strip("'").strip('"'))
+        session_id = event_data['session_id']
+        sse_type = event_data['sse_type']
+        for _, t in SSEType.__members__.items():
+            if sse_type == t.value:
+                return session_id, t
+        return session_id, sse_type
     else:
-        return SSEType.ERROR
+        return -1, SSEType.ERROR
 
 
 def with_requests(url, headers):
