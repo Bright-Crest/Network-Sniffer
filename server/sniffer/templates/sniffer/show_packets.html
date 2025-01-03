@@ -17,8 +17,9 @@
           <form id="sseForm" name="sseForm" method="post" novalidate>
             {% csrf_token %}
             <input type="hidden" name="sseData" value="restart" />
-            <button id="sseRestart" class="btn btn-primary" type="submit">重新开始捕获分组</button>
-            <button id="sseStop" class="btn btn-primary" type="button">停止捕获分组</button>
+            <button id="sseRestart" class="btn btn-primary" type="submit" {% if is_history %}disabled{% endif %}>重新开始捕获分组</button>
+            <button id="sseStop" class="btn btn-primary" type="button" {% if is_stopped %}disabled{% endif %}>停止捕获分组</button>
+            <button class="btn btn-primary" type="button" onclick="window.location.href='{% url 'sniffer:index' %}';">返回网络嗅探器主页面</button>
           </form>
         </div>
       </div>
@@ -81,6 +82,7 @@
       $('#sseStop').click(function () {
         sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }), '{{ request.get_full_path }}')
         is_stopped = true
+        $(this).prop('disabled', true)
       })
     })
     
@@ -102,7 +104,7 @@
         xhr.open('GET', '{{ request.get_full_path }}' + '?last_row=' + last_row, false)
         xhr.send()
         if (xhr.status === 200) {
-          if (xhr.responseText !== '\n') {
+          if (xhr.responseText !== '\n' && xhr.responseText !== '') {
             if (last_row_element) {
               last_row_element.classList.remove('last-row')
             }

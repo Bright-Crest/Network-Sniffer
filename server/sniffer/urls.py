@@ -11,6 +11,7 @@ urlpatterns = [
     # user-client
     path("<int:session_id>/show_net_cards/", views.show_net_cards, name="show_net_cards"),
     path("<int:session_id>/show_packets/", views.show_packets, name="show_packets"),
+    path("<int:session_id>/delete_session/", views.delete_session, name="delete_session"),
     # monitered client
     path("net_cards/", views.net_cards, name="net_cards"),
     path("sniff_config/", views.sniff_config, name="sniff_config"),

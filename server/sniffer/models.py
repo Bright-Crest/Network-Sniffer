@@ -1,23 +1,31 @@
 from django.db import models
+from django.db.models import Q
+from django.contrib import admin
 
 from libs import packet_handling
 
 
-# class SSEClient(models.Model):
-#     """
-#     SSE connected client model
-#     """
-#     # auto id
+class SSEClient(models.Model):
+    """
+    SSE connected client model
+    """
+    # auto id
 
-#     # ip = models.GenericIPAddressField(verbose_name="IP地址")
-#     # port = models.IntegerField(verbose_name="端口")
+    ip = models.GenericIPAddressField(verbose_name="IP地址")
+    # only for reference, may not be accurate
+    port = models.IntegerField(verbose_name="端口")
+    # sse channel this client is listening to
+    channel = models.CharField(verbose_name="SSE信道", max_length=128, default="")
 
-#     class Meta:
-#         verbose_name = "被嗅探的客户端"
-#         verbose_name_plural = verbose_name
+    class Meta:
+        verbose_name = "被嗅探的客户端"
+        verbose_name_plural = verbose_name
+        constraints = [
+            models.UniqueConstraint(fields=["channel"], name="unique_sse_channel"),
+        ]
 
-#     def __str__(self):
-#         return f"{self.id}"
+    def __str__(self):
+        return f"ip: {self.ip}; port: {self.port}"
 
 
 class NetCards(models.Model):
@@ -27,7 +35,7 @@ class NetCards(models.Model):
     # auto id
 
     net_cards = models.JSONField(verbose_name="网卡列表")
-    # sse_client = models.ForeignKey(SSEClient, on_delete=models.CASCADE, verbose_name="被嗅探的客户端")
+    sse_client = models.ForeignKey(SSEClient, on_delete=models.CASCADE, verbose_name="被嗅探的客户端")
 
     class Meta:
         verbose_name = "网卡"
@@ -59,6 +67,10 @@ class SniffHistory(models.Model):
     class Meta:
         verbose_name = "抓包历史记录"
         verbose_name_plural = verbose_name
+        constraints = [
+            models.CheckConstraint(check=(Q(is_stopped=True) & Q(is_configured=True)) | Q(is_stopped=False), name="check_stopped_sessions_must_be_configured"),
+            models.CheckConstraint(check=(Q(is_history=True) & Q(is_stopped=True)) | Q(is_history=False), name="check_history_sessions_must_be_stopped"),
+        ]
 
     def __str__(self):
         # return str(self.sniff_config)
@@ -81,4 +93,9 @@ class Packets(models.Model):
         verbose_name_plural = verbose_name
 
     def __str__(self):
+        return str(packet_handling.import_packet(self.packet))
+
+
+    @admin.display(description="数据包")
+    def packet_display(self):
         return str(packet_handling.import_packet(self.packet))

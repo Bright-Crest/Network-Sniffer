@@ -12,30 +12,42 @@ from libs import packet_handling
 Logger = logging.getLogger(__name__)
 
 
-def home(request):
+async def home(request):
     return render(request, 'home.html')
 
 
-def index(request):
+async def index(request):
     if request.method == "GET":
-        context = dict()
-        context["sniff_historys"] = models.SniffHistory.objects.all().order_by("-id")
-        # context["sse_clients"] = models.SSEClient.objects.all()
-        return render(request, "sniffer/index.html", context)
+        if "is_no_sse_client" in request.GET and request.GET["is_no_sse_client"] == "true":
+            # XMLHttpRequest to update page without refresh
+            if await models.SSEClient.objects.all().aexists():
+                return redirect(reverse("sniffer:index"))
+            else:
+                return HttpResponse()
+        else:
+            # normal get request
+            context = dict()
+            context["sniff_historys"] = [s async for s in models.SniffHistory.objects.all().order_by("-id")]
+            sse_clients = models.SSEClient.objects.all()
+            context["sse_clients"] = [c async for c in sse_clients] if await sse_clients.aexists() else None
+            return render(request, "sniffer/index.html", context)
+
     elif request.method == "POST":
         request_post = request.POST
         if "sseData" in request_post:
             # request_data: <QueryDict: {'csrfmiddlewaretoken': ['...'], 'sseData': ['start']}>
             if request_post["sseData"] == "start":
-                new_sniff_session = models.SniffHistory.objects.create()
-                request.session["sniffer_current_session_id"] = new_sniff_session.id
+                new_sniff_session = await models.SniffHistory.objects.acreate()
+                def _update_session():
+                    request.session["sniffer_current_session_id"] = new_sniff_session.id
+                await sync_to_async(_update_session)()
                 Logger.debug(f"Start new session with id {request.session['sniffer_current_session_id']}")
                 sseData = {
                     # simply use id as session_id
                     "session_id": new_sniff_session.id,
                     "sse_type": "start"
                 }
-                send_event(config.SSE_CHANNELS[0], "message", sseData)
+                await sync_to_async(send_event)(config.SSE_CHANNELS[0], "message", sseData)
                 Logger.debug(f"send event: {sseData}")
                 return redirect(reverse("sniffer:show_net_cards", kwargs={"session_id": int(new_sniff_session.id)}))
 
@@ -138,13 +150,35 @@ async def show_packets(request, session_id):
                 return HttpResponse()
 
 
+async def delete_session(request, session_id):
+    sniff_session_objs = models.SniffHistory.objects.filter(id=session_id)
+    if not await sniff_session_objs.aexists():
+        return render(request, "sniffer/error.html", {"error": f"Sniff session with id {session_id} does not exist"})
+    sniff_session = await sniff_session_objs.afirst()
+    if not sniff_session.is_stopped:
+        return render(request, "sniffer/error.html", {"error": f"Sniff session with id {session_id} is not stopped which cannot be deleted"})
 
-def net_cards(request):
+    await sniff_session_objs.adelete()
+    # auto cascadedly delete packets belonging to this session
+    return render(request, "sniffer/success.html", {"operation": f"删除{sniff_session.timestamp}的嗅探记录", "info": f"网卡: {sniff_session.net_card}，过滤条件: {sniff_session.filter}"})
+
+
+async def net_cards(request):
     if request.method == "GET":
         request_get = request.GET
         if "type" in request_get and request_get["type"] == "net_cards":
+            client_ip = request.META["REMOTE_ADDR"]
+            client_port = request.META["REMOTE_PORT"]
+
+            sse_client_objs = models.SSEClient.objects.filter(channel=config.SSE_CHANNELS[0])
+            if await sse_client_objs.aexists():
+                # assume that same sse channel has only one client
+                # but its port may change
+                await sse_client_objs.adelete()
+
+            sse_client = await models.SSEClient.objects.acreate(ip=client_ip, port=client_port, channel=config.SSE_CHANNELS[0])
             net_cards = json.loads(request_get["data"])
-            models.NetCards.objects.create(net_cards=net_cards)
+            await models.NetCards.objects.acreate(net_cards=net_cards, sse_client=sse_client)
             return HttpResponse()
 
 
@@ -177,12 +211,12 @@ async def packet(request):
             return HttpResponse()
 
 
-def session_error(request):
+async def session_error(request):
     if request.method == "GET":
         request_get = request.GET
         if "type" in request_get and request_get["type"] == "session_error":
             session_id = json.loads(request_get["data"])["session_id"]
-            models.SniffHistory.objects.filter(id=session_id).update(is_configured=True, is_history=True, is_stopped=True)
+            await models.SniffHistory.objects.filter(id=session_id).aupdate(is_configured=True, is_history=True, is_stopped=True)
             return HttpResponse()
 
 
