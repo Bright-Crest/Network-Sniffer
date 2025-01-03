@@ -2,6 +2,7 @@ import threading
 import queue
 import time
 import json
+import requests
 import logging
 
 import config
@@ -80,10 +81,11 @@ def send_net_cards(daemon=False):
 def ask_for_sniff_config(session_id, stop_event: threading.Event, daemon=False):
     sniff_config_timeout = None if daemon else config.ASK_FOR_SNIFF_CONFIG_TIMEOUT
     # async: ask for sniff config
+    request_session = requests.Session()
     while True:
         if not stop_event.is_set():
             sniff_config_response = msg.send_msg(msg.MsgType.SNIFF_CONFIG, json.dumps({"session_id": session_id}), config.URLS[msg.MsgType.SNIFF_CONFIG], 
-                                                 config.IS_POST_DICT[msg.MsgType.SNIFF_CONFIG], timeout=sniff_config_timeout)
+                                                 config.IS_POST_DICT[msg.MsgType.SNIFF_CONFIG], sniff_config_timeout, request_session)
             if sniff_config_response.status_code == 200:
                 if sniff_config_response.text != "":
                     sniff_config = sniff_config_response.json()
@@ -111,10 +113,11 @@ def sniffing(session_id, msg_buffer: queue.Queue, sniff_config: dict, stop_event
 
 def buffered_msg_sending(msg_buffer: queue.Queue, stop_event: threading.Event):
     '''Get packet from msg_buffer and send it to server.'''
+    request_session = requests.Session()
     while not stop_event.is_set():
         packet_msg = msg_buffer.get()
         msg.send_msg(msg.MsgType.PACKET, packet_msg, config.URLS[msg.MsgType.PACKET], 
-                        config.IS_POST_DICT[msg.MsgType.PACKET])
+                     config.IS_POST_DICT[msg.MsgType.PACKET], session=request_session)
 
 
 def start_sniffing_sending_session(session_id, sniff_config: dict, stop_event: threading.Event, daemon=False):

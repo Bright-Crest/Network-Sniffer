@@ -23,7 +23,6 @@ class SSEClientWrapper(SSEClient):
     """
     def __init__(self, event_source, char_enc='utf-8'):
         super().__init__(event_source, char_enc)
-        # self._events_buffer = [] # FIFO
     
     @staticmethod
     def _is_event_empty(event: Event):
