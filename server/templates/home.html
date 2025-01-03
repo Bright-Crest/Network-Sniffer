@@ -1,12 +1,23 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
+  <div class="container mt-3">
     <div class="row">
-        <div class="col-md-12">
-            <h1>Home</h1>
-            <p>Welcome to the home page of the network sniffer project.</p>
+      <div class="col-md-12">
+        <h1>欢迎来到网络嗅探器项目的主页</h1>
+      </div>
+      <div class="my-3 col-md-6">
+        <div class="card border-primary" onclick="window.location.href='{% url 'sniffer:index' %}';" style="cursor: pointer;">
+          <div class="card-header">
+            <h3 class="card-title mt-2">网络嗅探器</h3>
+          </div>
+          <div class="card-body">
+            <p class="card-text">这是一个用于网络嗅探的Web应用程序，可以显示和分析网络流量信息。</p>
+            <p class="card-subtitle mb-2 text-body-secondary">点击前往使用</p>
+          </div>
+          <img src="..." class="card-img-bottom" alt="network sniffer example image" />
         </div>
+      </div>
     </div>
-</div>
-{% endblock content %}
+  </div>
+{% endblock %}

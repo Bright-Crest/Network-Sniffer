@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container mt-3">
+    <div class="row">
+      <div class="col-md-12">
+        <h2>抱歉，出现了一点问题</h2>
+        <h6>不是服务器的问题，而是数据库的小问题，不影响继续使用</h6>
+      </div>
+      <div class="my-5 col-md-12">
+        <div class="card border-primary" onclick="window.location.href='{% url 'sniffer:index' %}';" style="cursor: pointer;">
+          <div class="card-body">
+            <h3 class="card-title m-3">点击这里返回网络嗅探器，重新开始嗅探</h3>
+          </div>
+        </div>
+      </div>
+      <div class="my-5">
+        <h4> 错误信息: </h4>
+        <p>{{ error }}</p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+

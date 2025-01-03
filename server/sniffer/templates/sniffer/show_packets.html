@@ -9,24 +9,35 @@
 {% block content %}
   <div class="container mt-3">
     <h1>抓包结果</h1>
-    <div>
-      <div>
-        <button id="sseStart" class="btn btn-outline-primary" type="button">重新开始捕获分组</button>
-        <button id="sseStop" class="btn btn-outline-primary" type="button">停止捕获分组</button>
-      </div>
-      <div>
-        <form id="sseForm" name="sseForm" method="post" novalidate>
-          {% csrf_token %}
-          <input type="hidden" name="sseData" />
-        </form>
+
+    <div class="sticky-top" style="top: 64.52px;">
+      <div class="mt-3"></div>
+      <div class="py-2">
+        <div>
+          <form id="sseForm" name="sseForm" method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="sseData" value="restart" />
+            <button id="sseRestart" class="btn btn-primary" type="submit">重新开始捕获分组</button>
+            <button id="sseStop" class="btn btn-primary" type="button">停止捕获分组</button>
+          </form>
+        </div>
       </div>
     </div>
-    <div>
-      {% for packet in packets %}
-        <div>
-          <p>{{ packet }}</p>
-        </div>
-      {% endfor %}
+
+    <div class="mt-5">
+      <table id="packetsTable" class="table table-hover">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>ID</th>
+            <th>TODO</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody class="table-group-divider">
+          {% include 'sniffer/show_packets_table_rows.html' %}
+        </tbody>
+      </table>
     </div>
   </div>
 {% endblock %}
@@ -46,6 +57,8 @@
             console.log('XHR submitted successfully')
           } else {
             console.log('Error submitting XHR')
+            // only for debug
+            // window.document.body.innerHTML = xhr.responseText
           }
         }
       }
@@ -60,18 +73,57 @@
       return formData
     }
     
+    is_stopped = {% if is_stopped %} true {% else %} false {% endif %}
+
+    const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+
     $(document).ready(function () {
-      $('#sseStart').click(function () {
-        sendFormXhr(fillFrom('sseForm', { sseData: 'start' }), '{% url "sniffer:index" %}')
-      })
       $('#sseStop').click(function () {
-        sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }), '{% url "sniffer:index" %}')
+        sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }), '{{ request.get_full_path }}')
+        is_stopped = true
       })
     })
     
     window.onload = function () {
       // 禁用“确认重新提交表单”
       window.history.replaceState(null, null, window.location.href)
+    
+      // update page without refresh and call this function repeatedly every
+      // 1 second until the stop button is clicked
+      function send_refresh() {
+        last_row_element = window.document.getElementsByClassName('last-row')[0]
+        last_row = 0
+        if (last_row_element) {
+          last_row = last_row_element.id.split('_')[1]
+        }
+        console.log('last row: ' + last_row)
+    
+        let xhr = new XMLHttpRequest()
+        xhr.open('GET', '{{ request.get_full_path }}' + '?last_row=' + last_row, false)
+        xhr.send()
+        if (xhr.status === 200) {
+          if (xhr.responseText !== '\n') {
+            if (last_row_element) {
+              last_row_element.classList.remove('last-row')
+            }
+            window.document.getElementById('packetsTable').innerHTML += xhr.responseText
+            console.log('update page without refresh')
+          }
+          return true
+        } else {
+          return false
+        }
+      }
+    
+      async function update() {
+        while (!is_stopped) {
+          await sleep(500)
+          if (send_refresh() === false) {
+            break
+          }
+        }
+      }
+      update()
     }
   </script>
 {% endblock %}

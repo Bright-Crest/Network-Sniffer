@@ -80,14 +80,20 @@ ASGI_APPLICATION = "net_proj.asgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # TODO read from cmd or config file
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'network',
+#         'USER': 'root',
+#         'PASSWORD': 'Agenda2022',
+#         'HOST': '127.0.0.1',
+#         'PORT': '3306',
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'network',
-        'USER': 'root',
-        'PASSWORD': 'Agenda2022',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

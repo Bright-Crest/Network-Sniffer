@@ -1,0 +1,8 @@
+{% for row, id, packet in packets %}
+  <tr id="row_{{ row }}" class="{% if forloop.last %}last-row{% endif %}">
+    <td>{{ row }}</td>
+    <td>{{ id }}</td>
+    <td>{{ packet }}</td>
+    <td>TODO</td>
+  </tr>
+{% endfor %}

@@ -22,39 +22,16 @@
 </style>
 
 <header class="sticky-top">
-  <nav class="navbar navbar-expand-md sticky-top border-bottom bg-body">
+  <nav class="navbar navbar-expand-sm border-bottom bg-body">
     <div class="container-fluid">
       <h3 class="fw-bolder"><a class="navbar-brand" href="#">网络嗅探器</a></h3>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link" aria-current="page" href="{% url 'home' %}">主页</a></li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">网络嗅探器</a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{% url 'sniffer:index' %}">index</a></li>
-              <li><hr class="dropdown-divider" /></li>
-            </ul>
-          </li>
-        </ul>
-        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">主页</a></li>
           <li class="nav-item">
-            <form class="d-flex" role="search">
-              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
-              <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
+            <a class="nav-link" aria-current="page" href="{% url 'sniffer:index' %}" role="button">网络嗅探器</a>
           </li>
-          {% if not user.is_authenticated %}
-          <li class="nav-item d-flex mx-2"><a class="nav-link" href="/login/">登录</a></li>
-          {% else %}
-          <li class="nav-item d-flex mx-2 dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">{{ user.username|default_if_none:"用户" }}</a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="{% url 'user_page:user_page' %}">个人主页</a></li>
-              <li><a class="dropdown-item" href="{% url 'logout' %}">注销</a></li>
-            </ul>
-          </li>
-          {% endif %}
         </ul>
       </div>
     </div>
