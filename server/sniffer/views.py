@@ -79,6 +79,7 @@ async def show_net_cards(request, session_id):
             net_card["IPv6"] = ipv6
             context["net_cards"].append(net_card)
         return render(request, "sniffer/show_net_cards.html", context)
+
     elif request.method == "POST":
         request_post = request.POST
         await sniff_session_objs.aupdate(
@@ -92,7 +93,13 @@ async def show_net_cards(request, session_id):
 async def show_packets(request, session_id):
     if request.method == "GET":
         if "last_row" not in request.GET:
-            sniff_session = await models.SniffHistory.objects.filter(id=session_id).afirst()
+            # normal get request
+            sniff_session_objs = models.SniffHistory.objects.filter(id=session_id)
+            if not (await sniff_session_objs.afirst()).is_configured:
+                await sniff_session_objs.aupdate(is_configured=True)
+                await asyncio.sleep(0.5)
+
+            sniff_session = await sniff_session_objs.afirst()
             context = {
                 "is_history": sniff_session.is_history,
                 "is_stopped": sniff_session.is_stopped,
@@ -132,7 +139,6 @@ async def show_packets(request, session_id):
 
             if request_post["sseData"] == "restart":
                 await sync_to_async(send_event)(config.SSE_CHANNELS[0], "message", sseData)
-                await asyncio.sleep(1)
                 sniff_history_objs = models.SniffHistory.objects.filter(id=session_id)
                 if (await sniff_history_objs.afirst()).is_history:
                     return render(request, "sniffer/error.html", {"error": "Cannot restart history session"})
@@ -143,7 +149,8 @@ async def show_packets(request, session_id):
                 return redirect(reverse("sniffer:show_packets", kwargs={"session_id": session_id}))
             elif request_post["sseData"] == "stop":
                 # XMLHttpRequest to send event without refresh
-                await models.SniffHistory.objects.filter(id=session_id).aupdate(is_stopped=True)
+                sniff_history_objs = models.SniffHistory.objects.filter(id=session_id)
+                await sniff_history_objs.aupdate(is_stopped=True, is_configured=True)
                 await sync_to_async(send_event)(config.SSE_CHANNELS[0], "message", sseData)
                 return HttpResponse()
             else:
@@ -155,8 +162,8 @@ async def delete_session(request, session_id):
     if not await sniff_session_objs.aexists():
         return render(request, "sniffer/error.html", {"error": f"Sniff session with id {session_id} does not exist"})
     sniff_session = await sniff_session_objs.afirst()
-    if not sniff_session.is_stopped:
-        return render(request, "sniffer/error.html", {"error": f"Sniff session with id {session_id} is not stopped which cannot be deleted"})
+    if not sniff_session.is_configured or not sniff_session.is_stopped:
+        await sync_to_async(send_event)(config.SSE_CHANNELS[0], "message", {"session_id": session_id, "sse_type": "stop"})
 
     await sniff_session_objs.adelete()
     # auto cascadedly delete packets belonging to this session
@@ -204,6 +211,10 @@ async def packet(request):
         request_get = request.GET
         if "type" in request_get and request_get["type"] == "packet":
             data = json.loads(request_get["data"])
+
+            if not await models.SniffHistory.objects.filter(id=data["session_id"]).aexists():
+                return HttpResponse()
+
             await models.Packets.objects.acreate(
                 sniff_history_id=data["session_id"],
                 packet=data["packet"]

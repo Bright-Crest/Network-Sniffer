@@ -4,18 +4,21 @@ from sniffer import models
 
 
 class SSEClientAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("id", "ip", "port", "channel")
+    search_fields = ("ip", "port", "channel")
+    list_filter = ("ip", "channel")
 
 
 class NetCardsAdmin(admin.ModelAdmin):
-    list_display = ("id", "net_cards")
-    search_fields = ("net_cards",)
-    list_filter = ("net_cards",)
-
+    list_display = ("id", "sse_client", "net_cards_display")
+    search_fields = ("sse_client", "net_cards_display")
+    list_filter = ("sse_client",)
 
 class SniffHistoryAdmin(admin.ModelAdmin):
-    pass
-    
+    list_display = ("id", "timestamp", "net_card", "filter", "is_history", "is_stopped", "is_configured")
+    search_fields = ("timestamp", "net_card", "filter")
+    list_filter = ("net_card", "filter", "is_history", "is_stopped", "is_configured")
+
     
 class PacketsAdmin(admin.ModelAdmin):
     list_display = ("id", "sniff_history", "packet_display")

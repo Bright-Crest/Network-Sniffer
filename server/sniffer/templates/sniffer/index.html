@@ -33,7 +33,7 @@
                 <form id="sseForm" name="sseForm" method="post" novalidate>
                   {% csrf_token %}
                   <input type="hidden" name="sseData" value="start" />
-                  <button id="sseStart" class="btn btn-outline-primary" type="submit">开始嗅探</button>
+                  <button id="sseStart" class="btn btn-outline-success" type="submit">开始嗅探</button>
                 </form>
               <td>
             </tr>
@@ -44,7 +44,7 @@
 
     <div class="mt-4 mb-5">
       <h3>正在进行的嗅探器</h3>
-      <h6 class="text-secondary">没有被停止（不可删除）</h6>
+      <h6 class="text-secondary">没有被停止</h6>
       <table class="table table-striped table-hover">
         <thead>
           <tr>
@@ -56,13 +56,94 @@
         </thead>
         <tbody class="table-group-divider">
           {% for sniff_history in sniff_historys %}
-            {% if sniff_history.is_history is False and sniff_history.is_stopped is False %}
+            {% if sniff_history.is_history is False and sniff_history.is_stopped is False and sniff_history.is_configured %}
               <tr>
                 <td>{{ sniff_history.timestamp }}</td>
                 <td>{{ sniff_history.net_card }}</td>
                 <td>{{ sniff_history.filter }}</td>
                 <td>
+                  <form id="sseForm_{{ sniff_history.id }}" name="sseForm_{{ sniff_history.id }}" method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="sseData"/>
+                  </form>
                   <button class="btn btn-outline-primary mx-2" onclick="window.location.href='{% url 'sniffer:show_packets' sniff_history.id %}';">查看</button>
+                  <button id="sseRestart_{{ sniff_history.id }}" class="sse-restart btn btn-outline-info mx-2">重新开始</button>
+                  <button id="sseStop_{{ sniff_history.id }}" class="sse-stop btn btn-outline-warning mx-2">停止</button>
+                  <!-- 注意id之间的对应关系，且id必须unique -->
+                  <!-- Button trigger modal -->
+                  <button class="btn btn-outline-danger mx-2" data-bs-toggle="modal" data-bs-target="#delete{{ sniff_history.id }}SniffHistoryModal">删除</button>
+                  <!-- Modal -->
+                  <div class="modal fade" id="delete{{ sniff_history.id }}SniffHistoryModal" tabindex="-1" aria-labelledby="delete{{ sniff_history.id }}SniffHistoryModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h1 class="modal-title fs-5" id="delete{{ sniff_history.id }}SniffHistoryModalLabel">确认删除</h1>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p>时间：{{ sniff_history.timestamp }}</p>
+                          <p>网卡：{{ sniff_history.net_card }}</p>
+                          <p>过滤条件：{{ sniff_history.filter }}</p>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between">
+                          <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="window.location.href='{% url 'sniffer:delete_session' sniff_history.id %}';">删除</button>
+                          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">取消</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 mb-5">
+      <h3>未开始的嗅探器</h3>
+      <h6 class="text-secondary">没有设置网卡和过滤条件</h6>
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody class="table-group-divider">
+          {% for sniff_history in sniff_historys %}
+            {% if sniff_history.is_history is False and sniff_history.is_stopped is False and sniff_history.is_configured is False %}
+              <tr>
+                <td>{{ sniff_history.timestamp }}</td>
+                <td>
+                  <form id="configForm_{{ sniff_history.id }}" name="configForm_{{ sniff_history.id }}" method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="net_card" value="" />
+                    <input type="hidden" name="filter" value="" />
+                  </form>
+                  <button class="btn btn-outline-primary mx-2" onclick="window.location.href='{% url 'sniffer:show_packets' sniff_history.id %}';">查看</button>
+                  <button id="sseConfigure_{{ sniff_history.id }}" class="sse-configure btn btn-outline-success mx-2">以默认配置开始</button>
+                  <!-- 注意id之间的对应关系，且id必须unique -->
+                  <!-- Button trigger modal -->
+                  <button class="btn btn-outline-danger mx-2" data-bs-toggle="modal" data-bs-target="#delete{{ sniff_history.id }}SniffHistoryModal">删除</button>
+                  <!-- Modal -->
+                  <div class="modal fade" id="delete{{ sniff_history.id }}SniffHistoryModal" tabindex="-1" aria-labelledby="delete{{ sniff_history.id }}SniffHistoryModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h1 class="modal-title fs-5" id="delete{{ sniff_history.id }}SniffHistoryModalLabel">确认删除</h1>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <p>时间：{{ sniff_history.timestamp }}</p>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between">
+                          <button type="button" class="btn btn-danger" data-bs-dismiss="modal" onclick="window.location.href='{% url 'sniffer:delete_session' sniff_history.id %}';">删除</button>
+                          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">取消</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </td>
               </tr>
             {% endif %}
@@ -91,7 +172,12 @@
                 <td>{{ sniff_history.net_card }}</td>
                 <td>{{ sniff_history.filter }}</td>
                 <td>
+                  <form id="sseForm_{{ sniff_history.id }}" name="sseForm_{{ sniff_history.id }}" method="post" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="sseData"/>
+                  </form>
                   <button class="btn btn-outline-primary mx-2" onclick="window.location.href='{% url 'sniffer:show_packets' sniff_history.id %}';">查看</button>
+                  <button id="sseRestart_{{ sniff_history.id }}" class="sse-restart btn btn-outline-info mx-2">重新开始</button>
                   <!-- 注意id之间的对应关系，且id必须unique -->
                   <!-- Button trigger modal -->
                   <button class="btn btn-outline-danger mx-2" data-bs-toggle="modal" data-bs-target="#delete{{ sniff_history.id }}SniffHistoryModal">删除</button>
@@ -179,9 +265,63 @@
 
 {% block script %}
   <script type="text/javascript">
+    function sendFormXhr(formData, url) {
+      // 不刷新页面提交
+      let xhr = new XMLHttpRequest()
+      xhr.open('POST', url)
+      xhr.send(formData)
+    
+      // 只是方便控制台检查是否提交成功
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            console.log('XHR submitted successfully')
+          } else {
+            console.log('Error submitting XHR')
+            // only for debug
+            // window.document.body.innerHTML = xhr.responseText
+          }
+        }
+      }
+    }
+    
+    function fillFrom(id, dict) {
+      var form = window.document.getElementById(id)
+      var formData = new FormData(form)
+      for (var key in dict) {
+        formData.set(key, dict[key])
+      }
+      return formData
+    }
+
     is_no_sse_client = {% if sse_clients is None %}true{% else %}false{% endif %}
 
     const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+
+    async function delayedReload(delay) {
+      await sleep(delay)
+      window.location.reload()
+    }
+
+    $(document).ready(function () {
+      $('.sse-restart').click(function () {
+        const session_id = $(this).attr("id").split('_')[1]
+        sendFormXhr(fillFrom('sseForm_' + session_id, { sseData: 'restart' }), '/sniffer/' + session_id + '/show_packets/')
+        delayedReload(500)
+      })
+
+      $('.sse-stop').click(function () {
+        const session_id = $(this).attr("id").split('_')[1]
+        sendFormXhr(fillFrom('sseForm_' + session_id, { sseData: 'stop' }), '/sniffer/' + session_id + '/show_packets/')
+        delayedReload(500)
+      })
+
+      $('.sse-configure').click(function () {
+        const session_id = $(this).attr("id").split('_')[1]
+        sendFormXhr(fillFrom('configForm_' + session_id, { net_card: '', filter: '' }), '/sniffer/' + session_id + '/show_net_cards/')
+        delayedReload(500)
+      })
+    })
 
     function send_refresh() {
       let xhr = new XMLHttpRequest()
@@ -190,7 +330,6 @@
       if (xhr.status === 200) {
         if (xhr.responseText !== '\n' && xhr.responseText !== '') {
           window.location.reload()
-          console.log('update page without refresh')
         }
         return true
       } else {

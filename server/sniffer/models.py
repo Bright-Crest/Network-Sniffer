@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Q
 from django.contrib import admin
+import json
 
 from libs import packet_handling
 
@@ -25,7 +26,7 @@ class SSEClient(models.Model):
         ]
 
     def __str__(self):
-        return f"ip: {self.ip}; port: {self.port}"
+        return "{" + f"sse channel: {self.channel}, ip: {self.ip}, port: {self.port}" + "}"
 
 
 class NetCards(models.Model):
@@ -42,7 +43,11 @@ class NetCards(models.Model):
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return self.name
+        return f"sse_client: {self.sse_client}"
+    
+    @admin.display(description="网卡")
+    def net_cards_display(self):
+        return json.dumps(self.net_cards, indent=4)
 
 
 class SniffHistory(models.Model):
@@ -74,7 +79,7 @@ class SniffHistory(models.Model):
 
     def __str__(self):
         # return str(self.sniff_config)
-        return f"net_card: {self.net_card}; filter: {self.filter}"
+        return "{" + f"net_card: {self.net_card}, filter: {self.filter}" + "}"
 
 
 class Packets(models.Model):

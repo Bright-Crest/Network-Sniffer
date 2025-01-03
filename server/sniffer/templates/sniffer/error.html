@@ -11,7 +11,7 @@
         <div class="card border-primary" onclick="window.location.href='{% url 'sniffer:index' %}';" style="cursor: pointer;">
           <div class="card-body">
             <h3 class="card-title m-3">点击这里返回网络嗅探器，重新开始嗅探</h3>
-            <p class="card-title m-3"><span id="timer">5</span>秒后自动跳转</p>
+            <p class="card-title m-3"><span id="timer">3</span>秒后自动跳转</p>
           </div>
         </div>
       </div>
@@ -35,7 +35,7 @@
 
       const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
       async function autoredirect() {
-        await sleep(5000)
+        await sleep(3000)
         window.location.href = "{% url 'sniffer:index' %}"
       }
       autoredirect()
