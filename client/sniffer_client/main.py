@@ -55,7 +55,16 @@ class MultiSniffingSendingSessions():
         self._sniffing_sending_sessions.stop(id)
     
     def restart(self, id):
-        '''restart with the same sniffing config'''
+        """
+        Restart the sniffing session with the same configuration.
+        Args:
+            id (int): The identifier of the sniffing session to restart.
+        Raises:
+            SessionError: If the session with the given id has never been started.
+        This method stops the current sniffing session and restarts it with the 
+        same configuration. If the session configuration is not available, it 
+        retrieves it from the configuration queue.
+        """
         if id not in self._sniff_config_queues:
             raise SessionError(id, f"Session {id} cannot be restarted because it has never been started")
 
@@ -90,9 +99,28 @@ def ask_for_sniff_config(session_id, stop_event: threading.Event, daemon=False):
                 if sniff_config_response.text != "":
                     sniff_config = sniff_config_response.json()
                     Logger.debug(f"Sniff config: {sniff_config}")
-                    return sniff_config
+                    try:
+                        sniff.Sniffer(sniff_config["net_card"], sniff_config["filter"])
+                        msg.send_msg(msg.MsgType.SNIFF_CONFIG_FEEDBACK, json.dumps({"session_id": session_id, "status": "ok"}), config.URLS[msg.MsgType.SNIFF_CONFIG_FEEDBACK],
+                                     config.IS_POST_DICT[msg.MsgType.SNIFF_CONFIG_FEEDBACK], 10, request_session)
+                        return sniff_config
+                    except sniff.SniffFilterException as e:
+                        Logger.error(f"{e}")
+                        msg.send_msg(msg.MsgType.SNIFF_CONFIG_FEEDBACK, json.dumps({"session_id": session_id, "status": "invalid_filter"}), config.URLS[msg.MsgType.SNIFF_CONFIG_FEEDBACK],
+                                        config.IS_POST_DICT[msg.MsgType.SNIFF_CONFIG_FEEDBACK], 10, request_session)
+                    except sniff.SniffNetCardException as e:
+                        Logger.error(f"{e}")
+                        msg.send_msg(msg.MsgType.SNIFF_CONFIG_FEEDBACK, json.dumps({"session_id": session_id, "status": "invalid_net_card"}), config.URLS[msg.MsgType.SNIFF_CONFIG_FEEDBACK],
+                                        config.IS_POST_DICT[msg.MsgType.SNIFF_CONFIG_FEEDBACK], 10, request_session)
+                    except Exception as e:
+                        Logger.error(f"{e}")
+                        msg.send_msg(msg.MsgType.SNIFF_CONFIG_FEEDBACK, json.dumps({"session_id": session_id, "status": "unknown_error", "error": str(e)}), config.URLS[msg.MsgType.SNIFF_CONFIG_FEEDBACK],
+                                        config.IS_POST_DICT[msg.MsgType.SNIFF_CONFIG_FEEDBACK], 10, request_session)
+                    finally:
+                        # wait for server to process error feedback
+                        time.sleep(3)
         else:
-            return dict()
+            return {"net_card": "", "filter": ""} 
 
 
 def sniffing(session_id, msg_buffer: queue.Queue, sniff_config: dict, stop_event: threading.Event):
@@ -165,6 +193,8 @@ def sse_client(callbacks: dict, daemon=False):
                     raise TypeError(f"Unknown SSE type: {sse_type}")
         except TypeError as e:
             Logger.error(f"{e}")
+        except KeyboardInterrupt:
+            break
         except Exception as e:
             Logger.error(f"{e}")
         finally:

@@ -11,6 +11,7 @@ class MsgType(Enum):
     SNIFF_CONFIG = "sniff_config"
     PACKET = "packet"
     SESSION_ERROR = "session_error" # e.g. sniffing session not found or session cannot be restarted
+    SNIFF_CONFIG_FEEDBACK = "sniff_config_feedback" # whether the sniff config is valid
 
 
 def send_msg(msg_type: MsgType, msg, url, is_post, timeout=None, session: requests.Session=None):

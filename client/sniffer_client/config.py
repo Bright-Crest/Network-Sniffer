@@ -16,6 +16,7 @@ URLS = {
     msg.MsgType.SNIFF_CONFIG: SERVER_URL + "sniffer/sniff_config/",
     msg.MsgType.PACKET: SERVER_URL + "sniffer/packet/",
     msg.MsgType.SESSION_ERROR: SERVER_URL + "sniffer/session_error/",
+    msg.MsgType.SNIFF_CONFIG_FEEDBACK: SERVER_URL + "sniffer/sniff_config_feedback/",
 }
 
 IS_POST_DICT = {
@@ -23,6 +24,7 @@ IS_POST_DICT = {
     msg.MsgType.SNIFF_CONFIG: False,
     msg.MsgType.PACKET: False,
     msg.MsgType.SESSION_ERROR: False,
+    msg.MsgType.SNIFF_CONFIG_FEEDBACK: False,
 }
 
 

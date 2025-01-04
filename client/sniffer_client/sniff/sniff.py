@@ -7,6 +7,18 @@ import queue
 from utils import utils
 
 
+class SniffException(Exception):
+    pass
+
+
+class SniffNetCardException(SniffException):
+    pass
+
+
+class SniffFilterException(SniffException):
+    pass
+
+
 class Sniffer():
     '''Sniffer assuring that the packets are not lost. The output is stream of packets.'''
 
@@ -16,12 +28,34 @@ class Sniffer():
         self._packets_buffer = queue.Queue()
         self._sniff_thread = None
         self._stop = False
+        self._config_check()
+
+    def _config_check(self):
+        # type: () -> None
+        '''Check if the configuration is correct.
+        
+        Raises:
+            SniffNetCardException: If the network card is invalid.
+            SniffFilterException: If the filter is invalid.
+        '''
+        try:
+            sniff(iface=self._net_card, filter=self._filter, count=1, store=False)
+        except Scapy_Exception as e:
+            if "filter" in str(e):
+                raise SniffFilterException(f"Invalid filter: {self._filter}")
+            else:
+                raise Scapy_Exception from e
+        except ValueError as e:
+            if "interface" in str(e).lower():
+                raise SniffNetCardException(f"Invalid network card: {self._net_card}")
+            else:
+                raise ValueError from e
 
     def _buffer_packet(self, packet: Packet):
         self._packets_buffer.put(packet)
     
     def _sniff(self, stop_event: threading.Event):
-        sniffer = AsyncSniffer(iface=self._net_card, filter=self._filter, prn=self._buffer_packet, stop_filter=lambda _: stop_event.is_set())
+        sniffer = AsyncSniffer(iface=self._net_card, filter=self._filter, prn=self._buffer_packet, stop_filter=lambda _: stop_event.is_set(), store=False)
         sniffer.start()
 
     def get_packets(self):
@@ -39,7 +73,7 @@ class Sniffer():
     def stop(self):
         self._stop = True
         self._sniff_thread.stop()
-
+    
 
 def export_packet(packet):
     # type: (Any) -> str
@@ -77,52 +111,3 @@ def _ifaces2dict(interfaces: NetworkInterfaceDict):
             "IPv6": dev.ips[6],
         }
     return ret
-
-
-# def handle_packet(packet: Packet):
-#     import string
-#     # Handling each packet and extract information from each layer
-#     packet_data = ""
-#     # Ether Layer : D L
-#     if packet.haslayer(Ether):
-#         packet_data += f"MAC Source: {packet[Ether].src}\n"
-#         packet_data += f"MAC Destination: {packet[Ether].dst}\n"
-#         packet_data += f"Ethernet Type: 0x{packet[Ether].type:04x}\n"
-
-#     # IP Layer : N
-#     if packet.haslayer(IP):
-#         packet_data += "\nIP - Layer\n"
-#         packet_data += f"IP Version: {packet[IP].version}\n"
-#         packet_data += f"Source IP: {packet[IP].src}\n"
-#         packet_data += f"Destination IP: {packet[IP].dst}\n"
-
-#         if packet.haslayer(TCP):
-#             packet_data += "\nTCP - Layer\n"
-#             packet_data += f"Source Port: {packet[TCP].sport}\n"
-#             packet_data += f"Destination Port: {packet[TCP].dport}\n"
-#             packet_data += f"Flags: {packet[TCP].flags}\n"
-
-#         if packet.haslayer(UDP):
-#             packet_data += "\nUDP - Layer\n"
-#             packet_data += f"Source Port: {packet[UDP].sport}\n"
-#             packet_data += f"Destination Port: {packet[UDP].dport}\n"
-#             packet_data += f"Length: {packet[UDP].len}\n"
-
-#             # ICMP Analysis
-#         elif packet.haslayer(ICMP):
-#             icmp = packet[ICMP]
-#             packet_data += "\nICMP - Layer\n"
-#             packet_data += f"Type: {icmp.type}\n"
-#             packet_data += f"Code: {icmp.code}\n"
-
-#     if packet.haslayer(Raw):
-#         data = ""
-#         for b in bytes(packet[Raw]):
-#             if chr(b) in string.printable:
-#                 data += chr(b)
-#             else:
-#                 data += "."
-#         packet_data += data
-#     print("-" * 50)
-#     print(packet_data)
-#     print("-" * 50)
