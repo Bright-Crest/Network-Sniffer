@@ -7,7 +7,7 @@ import asyncio
 import logging
 
 from sniffer import models, config
-from libs import packet_handling
+import libs.packet_handling as pkt
 
 Logger = logging.getLogger(__name__)
 
@@ -109,8 +109,8 @@ async def show_packets(request, session_id):
             i = 0
             async for p in models.Packets.objects.filter(sniff_history_id=session_id).order_by("id"):
                 row = i + 1
-                packet = packet_handling.import_object(p.packet)
-                packets.append((row, p.id, str(packet)))
+                packet = pkt.import_packet(p.packet)
+                packets.append((row, pkt.dict_summary(packet), pkt.packet2list(packet)))
                 i += 1
             context["packets"] = packets
             return render(request, "sniffer/show_packets.html", context)
@@ -124,8 +124,8 @@ async def show_packets(request, session_id):
                     i += 1
                     continue
                 row = i + 1
-                packet = packet_handling.import_object(p.packet)
-                packets_to_append.append((row, p.id, str(packet)))
+                packet = pkt.import_packet(p.packet)
+                packets_to_append.append((row, pkt.dict_summary(packet), pkt.packet2list(packet)))
                 i += 1
             return render(request, "sniffer/show_packets_table_rows.html", {"packets": packets_to_append})
 

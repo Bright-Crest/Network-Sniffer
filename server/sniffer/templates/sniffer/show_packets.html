@@ -9,6 +9,7 @@
 {% block content %}
   <div class="container mt-3">
     <h1>抓包结果</h1>
+    <h6 class="text-secondary">推荐停止捕获后再进行查看包等操作，以避免出现页面卡顿等情况</h6>
 
     <div class="sticky-top" style="top: 64.52px;">
       <div class="mt-3"></div>
@@ -25,14 +26,17 @@
       </div>
     </div>
 
-    <div class="mt-5">
+    <div class="mt-0" style="max-height: 600px; overflow-y: auto;">
       <table id="packetsTable" class="table table-hover">
-        <thead>
+        <thead class="sticky-top" style="z-index: 0;">
           <tr>
-            <th>No.</th>
-            <th>ID</th>
-            <th>TODO</th>
-            <th>操作</th>
+            <th>序号</th>
+            <th>时间</th>
+            <th>Source</th>
+            <th>Destination</th>
+            <th>协议</th>
+            <th>长度</th>
+            <th>信息</th>
           </tr>
         </thead>
         <tbody class="table-group-divider">

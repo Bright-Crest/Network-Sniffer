@@ -21,4 +21,5 @@ urlpatterns = [
     # only for debug
     # path("test_sse/", views.test_sse, name="test_sse"),
     # path("render_sse/", views.render_sse, name="render_sse"),
+    # path("<int:session_id>/test_show_packets/", views.test_show_packets, name="test_show_packets"),
 ]
