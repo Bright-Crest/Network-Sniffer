@@ -64,9 +64,11 @@ async def show_net_cards(request, session_id):
         return redirect(reverse("sniffer:show_packets", kwargs={"session_id": session_id}))
 
     if request.method == "GET":
-        context = {"net_cards": []}
+        sniff_session = await models.SniffHistory.objects.filter(id=session_id).afirst()
+        context = {"net_cards": []} if sniff_session.config_error == dict() \
+                  else {"net_cards": [], "config_error": sniff_session.config_error["status"], "prev_net_card": sniff_session.net_card, "prev_filter": sniff_session.filter}
         while not await models.NetCards.objects.all().aexists():
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
         net_cards = await models.NetCards.objects.order_by("-id").afirst()
         for _, net_card in net_cards.net_cards.items():
             ipv4 = ""
@@ -85,9 +87,17 @@ async def show_net_cards(request, session_id):
         await sniff_session_objs.aupdate(
             net_card=request_post["net_card"],
             filter=request_post["filter"],
-            is_configured=True
+            is_config_submitted=True,
         )
-        return redirect(reverse("sniffer:show_packets", kwargs={"session_id": session_id}))
+        await asyncio.sleep(0.5)
+        while True:
+            ss = await sniff_session_objs.afirst()
+            if ss.is_configured:
+                return redirect(reverse("sniffer:show_packets", kwargs={"session_id": session_id}))
+            if not ss.is_config_submitted and ss.config_error != dict():
+                Logger.debug(f"user client about to receive config error: {ss.config_error}")
+                return redirect(reverse("sniffer:show_net_cards", kwargs={"session_id": session_id}))
+            await asyncio.sleep(0.1)
 
 
 async def show_packets(request, session_id):
@@ -195,14 +205,22 @@ async def sniff_config(request):
         if "type" in request_get and request_get["type"] == "sniff_config":
             session_id = json.loads(request_get["data"])["session_id"]
             sniff_session_objs = models.SniffHistory.objects.filter(id=session_id)
-            while not (await sniff_session_objs.afirst()).is_configured:
+            while (await sniff_session_objs.aexists()) and not (await sniff_session_objs.afirst()).is_config_submitted:
                 Logger.debug(f"wait for sniff session {session_id} to be configured")
                 await asyncio.sleep(1)
-            sniff_session = await sniff_session_objs.afirst()
-            res_text = json.dumps({
-                "net_card": sniff_session.net_card,
-                "filter": sniff_session.filter
-            })
+            
+            res_text = ""
+            if (await sniff_session_objs.aexists()):
+                sniff_session = await sniff_session_objs.afirst()
+                res_text = json.dumps({
+                    "net_card": sniff_session.net_card,
+                    "filter": sniff_session.filter
+                })
+            else:
+                res_text = json.dumps({
+                    "net_card": "",
+                    "filter": ""
+                })
             return HttpResponse(res_text)
     
 
@@ -228,6 +246,23 @@ async def session_error(request):
         if "type" in request_get and request_get["type"] == "session_error":
             session_id = json.loads(request_get["data"])["session_id"]
             await models.SniffHistory.objects.filter(id=session_id).aupdate(is_configured=True, is_history=True, is_stopped=True)
+            return HttpResponse()
+
+
+async def sniff_config_feedback(request):
+    if request.method == "GET":
+        request_get = request.GET
+        if "type" in request_get and request_get["type"] == "sniff_config_feedback":
+            data = json.loads(request_get["data"])
+            session_id = data["session_id"]
+            if data["status"] == "ok":
+                await models.SniffHistory.objects.filter(id=session_id).aupdate(is_configured=True)
+            elif data["status"] == "invalid_filter" or data["status"] == "invalid_net_card":
+                Logger.debug(f"sniff config error: {data['status']} with session {session_id}")
+                await models.SniffHistory.objects.filter(id=session_id).aupdate(is_config_submitted=False, config_error={"status": data["status"]})
+            elif data["status"] == "unknown_error":
+                Logger.error(f"Error \"{data['error']}\" occurred during configuring session {session_id}")
+                await models.SniffHistory.objects.filter(id=session_id).aupdate(is_config_submitted=False, config_error={"status": data["status"], "error": data["error"]})
             return HttpResponse()
 
 

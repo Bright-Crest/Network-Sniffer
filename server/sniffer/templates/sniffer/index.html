@@ -121,7 +121,7 @@
                     <input type="hidden" name="net_card" value="" />
                     <input type="hidden" name="filter" value="" />
                   </form>
-                  <button class="btn btn-outline-primary mx-2" onclick="window.location.href='{% url 'sniffer:show_packets' sniff_history.id %}';">查看</button>
+                  <button class="btn btn-outline-primary mx-2" onclick="window.location.href='{% url 'sniffer:show_net_cards' sniff_history.id %}';">配置</button>
                   <button id="sseConfigure_{{ sniff_history.id }}" class="sse-configure btn btn-outline-success mx-2">以默认配置开始</button>
                   <!-- 注意id之间的对应关系，且id必须unique -->
                   <!-- Button trigger modal -->

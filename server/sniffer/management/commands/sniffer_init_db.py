@@ -10,5 +10,5 @@ class Command(BaseCommand):
         from sniffer import models
         models.SSEClient.objects.all().delete()
         models.NetCards.objects.all().delete()
-        models.SniffHistory.objects.all().update(is_configured=True, is_history=True, is_stopped=True)
+        models.SniffHistory.objects.all().update(is_config_submitted=True, is_configured=True, config_error=dict(), is_history=True, is_stopped=True)
         return "Sniffer database initialized."

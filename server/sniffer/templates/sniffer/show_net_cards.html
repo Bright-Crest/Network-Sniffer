@@ -18,31 +18,66 @@
             <th>MAC地址</th>
             <th>IPv4地址</th>
             <th>IPv6地址</th>
-            <th>操作</th>
           </tr>
         </thead>
         <tbody class="table-group-divider">
           {% autoescape off %}
-          {% for net_card in net_cards %}
-            <tr>
-              <td>{{ net_card.Name }}</td>
-              <td>{{ net_card.MAC }}</td>
-              <td>{{ net_card.IPv4 }}</td>
-              <td>{{ net_card.IPv6 }}</td>
-              <td>TODO</td>
-            </tr>
-          {% endfor %}
+            {% for net_card in net_cards %}
+              <tr>
+                <td>{{ net_card.Name }}</td>
+                <td>{{ net_card.MAC }}</td>
+                <td>{{ net_card.IPv4 }}</td>
+                <td>{{ net_card.IPv6 }}</td>
+              </tr>
+            {% endfor %}
           {% endautoescape %}
         </tbody>
       </table>
     </div>
 
-    <div>
+    <div class="mt-4">
       <form method="post">
         {% csrf_token %}
-        <div class="form-control">
-          <div><label class="form-label">网卡名称: <input type="text" name="net_card" /></label></div>
-          <div><label class="form-label">捕获过滤条件: <input type="text" name="filter" /></label></div>
+        <div>
+          {% comment %} 
+          <div class="form-floating mb-3">
+            <input type="text" id="net_card" name="net_card" list="netCardsOptions" class="form-control" placeholder="" />
+            <label class="form-label" for="net_card">网卡名称</label>
+            <datalist id="netCardsOptions">
+              {% for net_card in net_cards %}
+                <option value="{{ net_card.Name }}">
+              {% endfor %}
+            </datalist>
+          </div> 
+          {% endcomment %}
+
+          <div class="mb-3">
+            <label for="net_card" class="form-label">网卡名称</label>
+            <select id="net_card" name="net_card" class="form-select {% if "net_card" in config_error %}is-invalid{% endif %}" {% if config_error == "invalid_net_card" %}aria-describedby="net_card_error"{% endif %}>
+                <option value="" {% if not config_error %}selected{% endif %}>请选择网卡</option>
+                <option value="" {% if config_error and prev_net_card == "" %}selected{% endif %} >全选</option>
+              {% for net_card in net_cards %}
+                <option value="{{ net_card.Name }}" {% if config_error and prev_net_card == net_card.Name %}selected{% endif %}>{{ net_card.Name }}</option>
+              {% endfor %}
+            </select>
+            {% if config_error == "invalid_net_card" %}
+              <div id="net_card_error" class="invalid-feedback">
+                无法使用此网卡
+              </div>
+            {% endif %}
+          </div>
+
+          </div>
+          <div class="form-floating mb-3">
+            <input type="text" id="filter" name="filter" class="form-control {% if config_error == "invalid_filter" %}is-invalid{% endif %}" placeholder="" value="{% if config_error %}{{ prev_filter }}{% endif %}" {% if config_error == "invalid_filter" %}aria-describedby="filter_error"{% endif %} />
+            <label class="form-label" for="filter">捕获过滤条件 (支持BPF语法，示例：“tcp port 80”) </label>
+            {% if config_error == "invalid_filter" %}
+              <div id="filter_error" class="invalid-feedback">
+                过滤条件存在错误
+              </div>
+            {% endif %}
+            <div class="text-secondary my-2 ms-4">不支持"http"</div>
+          </div>
           <button type="submit" class="btn btn-outline-primary">开始监听</button>
         </div>
       </form>

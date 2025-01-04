@@ -17,6 +17,7 @@ urlpatterns = [
     path("sniff_config/", views.sniff_config, name="sniff_config"),
     path("packet/", views.packet, name="packet"),
     path("session_error/", views.session_error, name="session_error"),
+    path("sniff_config_feedback/", views.sniff_config_feedback, name="sniff_config_feedback"),
 
     # only for debug
     # path("test_sse/", views.test_sse, name="test_sse"),

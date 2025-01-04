@@ -60,7 +60,11 @@ class SniffHistory(models.Model):
     net_card = models.CharField(verbose_name="网卡", max_length=200, blank=True, default="")
     filter = models.TextField(verbose_name="过滤器", blank=True, default="")
     # whether user submit sniff config
-    is_configured = models.BooleanField(verbose_name="是否已经配置网卡和过滤条件", default=False)
+    is_config_submitted = models.BooleanField(verbose_name="是否已提交抓包配置", default=False)
+    # whether this sniff session is successfully configured with net card and filter
+    is_configured = models.BooleanField(verbose_name="是否已经成功配置网卡和过滤条件", default=False)
+    # config error info if any
+    config_error = models.JSONField(verbose_name="配置错误信息", default=dict)
     # whether this sniff session is completely finished, namely a history record. If True, then this session
     # is disconnected with the monitored client which means that this session cannot be restarted.
     is_history = models.BooleanField(verbose_name="是否是历史记录", default=False)
@@ -73,6 +77,7 @@ class SniffHistory(models.Model):
         verbose_name = "抓包历史记录"
         verbose_name_plural = verbose_name
         constraints = [
+            models.CheckConstraint(check=(Q(is_configured=True) & Q(is_config_submitted=True)) | Q(is_configured=False), name="check_configured_sessions_must_be_submitted"),
             models.CheckConstraint(check=(Q(is_stopped=True) & Q(is_configured=True)) | Q(is_stopped=False), name="check_stopped_sessions_must_be_configured"),
             models.CheckConstraint(check=(Q(is_history=True) & Q(is_stopped=True)) | Q(is_history=False), name="check_history_sessions_must_be_stopped"),
         ]

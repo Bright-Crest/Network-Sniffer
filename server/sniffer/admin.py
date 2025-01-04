@@ -15,9 +15,9 @@ class NetCardsAdmin(admin.ModelAdmin):
     list_filter = ("sse_client",)
 
 class SniffHistoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "timestamp", "net_card", "filter", "is_history", "is_stopped", "is_configured")
+    list_display = ("id", "timestamp", "net_card", "filter", "is_history", "is_stopped", "is_configured", "is_config_submitted")
     search_fields = ("timestamp", "net_card", "filter")
-    list_filter = ("net_card", "filter", "is_history", "is_stopped", "is_configured")
+    list_filter = ("net_card", "filter", "is_history", "is_stopped", "is_configured", "is_config_submitted")
 
     
 class PacketsAdmin(admin.ModelAdmin):

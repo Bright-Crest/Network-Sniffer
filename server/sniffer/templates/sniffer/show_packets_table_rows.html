@@ -29,7 +29,7 @@
                     {% if k != "summary" and k != "name" %}
                       {% if v.copy is None %}
                         {% comment "v is string" %}{% endcomment %}
-                        <div class="pt-1 mb-1 {% if not forloop.first %}border-top{% endif %}">
+                        <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
                           <p class="mb-0">{{ k }}: {% autoescape off %}{{ v }}{% endautoescape %}</p>
                         </div>
                       {% else %}
@@ -50,13 +50,13 @@
                                     <div>
                                       {% if sub.items is None %}
                                         {% comment "sub is string" %}{% endcomment %}
-                                        <div class="pt-1 mb-1 {% if not forloop.first %}border-top{% endif %}">
+                                        <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
                                           <p class="mb-0">{{ sub }}</p>
                                         </div>
                                       {% else %}
                                         {% comment "sub is dict" %}{% endcomment %}
                                         {% for subk, subv in sub.items %}
-                                          <div class="pt-1 mb-1 {% if not forloop.first %}border-top{% endif %}">
+                                          <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
                                             <p class="mb-0">{{ subk }}: {{ subv }}</p>
                                           </div>
                                         {% endfor %}
@@ -67,7 +67,7 @@
                                 {% else %}
                                   {% comment "v is dict" %}{% endcomment %}
                                   {% for subk, subv in v.items %}
-                                    <div class="pt-1 mb-1 {% if not forloop.first %}border-top{% endif %}">
+                                    <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
                                       <p class="mb-0">{{ subk }}: {{ subv }}</p>
                                     </div>
                                   {% endfor %}
