@@ -75,3 +75,6 @@ An assignment of mainly implementing a network sniffer using python, Django and 
 
 见[scripts/README.md](.\\scripts\\README.md)
 
+
+
+运行脚本后打开`127.0.0.1:8000`，脚本默认在8000端口提供服务
