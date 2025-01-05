@@ -59,7 +59,7 @@
             {% if sniff_history.is_history is False and sniff_history.is_stopped is False and sniff_history.is_configured %}
               <tr>
                 <td>{{ sniff_history.timestamp }}</td>
-                <td>{{ sniff_history.net_card }}</td>
+                <td>{{ sniff_history.net_card|default:"全部" }}</td>
                 <td>{{ sniff_history.filter }}</td>
                 <td>
                   <form id="sseForm_{{ sniff_history.id }}" name="sseForm_{{ sniff_history.id }}" method="post" novalidate>
@@ -82,7 +82,7 @@
                         </div>
                         <div class="modal-body">
                           <p>时间：{{ sniff_history.timestamp }}</p>
-                          <p>网卡：{{ sniff_history.net_card }}</p>
+                          <p>网卡：{{ sniff_history.net_card|default:"全部" }}</p>
                           <p>过滤条件：{{ sniff_history.filter }}</p>
                         </div>
                         <div class="modal-footer d-flex justify-content-between">
@@ -169,7 +169,7 @@
             {% if sniff_history.is_history is False and sniff_history.is_stopped %}
               <tr>
                 <td>{{ sniff_history.timestamp }}</td>
-                <td>{{ sniff_history.net_card }}</td>
+                <td>{{ sniff_history.net_card|default:"全部" }}</td>
                 <td>{{ sniff_history.filter }}</td>
                 <td>
                   <form id="sseForm_{{ sniff_history.id }}" name="sseForm_{{ sniff_history.id }}" method="post" novalidate>
@@ -191,7 +191,7 @@
                         </div>
                         <div class="modal-body">
                           <p>时间：{{ sniff_history.timestamp }}</p>
-                          <p>网卡：{{ sniff_history.net_card }}</p>
+                          <p>网卡：{{ sniff_history.net_card|default:"全部" }}</p>
                           <p>过滤条件：{{ sniff_history.filter }}</p>
                         </div>
                         <div class="modal-footer d-flex justify-content-between">
@@ -226,7 +226,7 @@
             {% if sniff_history.is_history %}
               <tr>
                 <td>{{ sniff_history.timestamp }}</td>
-                <td>{{ sniff_history.net_card }}</td>
+                <td>{{ sniff_history.net_card|default:"全部" }}</td>
                 <td>{{ sniff_history.filter }}</td>
                 <td>
                   <button class="btn btn-outline-primary mx-2" onclick="window.location.href='{% url 'sniffer:show_packets' sniff_history.id %}';">查看</button>
@@ -243,7 +243,7 @@
                         </div>
                         <div class="modal-body">
                           <p>时间：{{ sniff_history.timestamp }}</p>
-                          <p>网卡：{{ sniff_history.net_card }}</p>
+                          <p>网卡：{{ sniff_history.net_card|default:"全部" }}</p>
                           <p>过滤条件：{{ sniff_history.filter }}</p>
                         </div>
                         <div class="modal-footer d-flex justify-content-between">
