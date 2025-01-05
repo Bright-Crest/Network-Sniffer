@@ -84,7 +84,7 @@ def send_net_cards(daemon=False):
     if net_cards_response.status_code != 200:
         raise Exception(f"Failed to send net cards: {net_cards_response.text}")
     else:
-        Logger.info(f"Sent net cards: {net_cards.summary()[:60]}...")
+        Logger.info(f"Sent net cards: {str(net_cards)[:60]}...")
 
 
 def ask_for_sniff_config(session_id, stop_event: threading.Event, daemon=False):
