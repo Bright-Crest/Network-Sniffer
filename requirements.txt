@@ -20,7 +20,6 @@ hyperlink==21.0.0
 idna==3.10
 incremental==24.7.2
 MarkupSafe==3.0.2
-mysqlclient==2.2.6
 pubcontrol==3.5.0
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
@@ -32,7 +31,7 @@ scapy==2.6.1
 service-identity==24.2.0
 six==1.17.0
 sqlparse==0.5.3
-sseclient-py @ file:///D:/stephenzhu/Desktop/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C%E5%A4%A7%E4%BD%9C%E4%B8%9A/Network-Sniffer/client/requirements/sseclient_py-1.8.0-py2.py3-none-any.whl#sha256=4ecca6dc0b9f963f8384e9d7fd529bf93dd7d708144c4fb5da0e0a1a926fee83
+sseclient-py==1.8.0
 Twisted==24.11.0
 txaio==23.1.1
 typing_extensions==4.12.2
