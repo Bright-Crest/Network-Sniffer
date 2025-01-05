@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block content %}
   <div class="container mt-3">
     <div class="row">
@@ -15,7 +17,7 @@
             <p class="card-text">这是一个用于网络嗅探的Web应用程序，可以显示和分析网络流量信息。</p>
             <p class="card-subtitle mb-2 text-body-secondary">点击前往使用</p>
           </div>
-          <img src="..." class="card-img-bottom" alt="network sniffer example image" />
+          <img src="{% static 'img/sniffer_example.png' %}" class="card-img-bottom" alt="network sniffer example image" />
         </div>
       </div>
     </div>
