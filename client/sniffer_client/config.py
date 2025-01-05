@@ -35,5 +35,5 @@ SEND_NET_CARDS_TIMEOUT = 10
 ASK_FOR_SNIFF_CONFIG_TIMEOUT = 60
 
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 logging.basicConfig(level=LOG_LEVEL, format = '%(asctime)s %(name)s: [%(levelname)s] %(message)s')

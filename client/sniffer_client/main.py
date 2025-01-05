@@ -84,7 +84,7 @@ def send_net_cards(daemon=False):
     if net_cards_response.status_code != 200:
         raise Exception(f"Failed to send net cards: {net_cards_response.text}")
     else:
-        Logger.info(f"Sent net cards: {net_cards}")
+        Logger.info(f"Sent net cards: {net_cards.summary()[:60]}...")
 
 
 def ask_for_sniff_config(session_id, stop_event: threading.Event, daemon=False):
@@ -98,7 +98,7 @@ def ask_for_sniff_config(session_id, stop_event: threading.Event, daemon=False):
             if sniff_config_response.status_code == 200:
                 if sniff_config_response.text != "":
                     sniff_config = sniff_config_response.json()
-                    Logger.debug(f"Sniff config: {sniff_config}")
+                    Logger.info(f"Received sniff config: {sniff_config}")
                     try:
                         sniff.Sniffer(sniff_config["net_card"], sniff_config["filter"])
                         msg.send_msg(msg.MsgType.SNIFF_CONFIG_FEEDBACK, json.dumps({"session_id": session_id, "status": "ok"}), config.URLS[msg.MsgType.SNIFF_CONFIG_FEEDBACK],
@@ -133,7 +133,7 @@ def sniffing(session_id, msg_buffer: queue.Queue, sniff_config: dict, stop_event
             "packet": sniff.export_packet(packet),
         })
         msg_buffer.put(packet_msg)
-        Logger.debug(f"packet summay: {packet.summary()}")
+        Logger.info(f"Sent packet: {str(packet)[:60]}...")
         if stop_event.is_set():
             sniffer.stop()
             return
@@ -172,15 +172,15 @@ def sse_client(callbacks: dict, daemon=False):
     sse_url = sse.sse_url(config.SERVER_URL, config.SSE_SUFFIX)
     while True:
         try:
-            Logger.debug("SSE connecting")
+            Logger.info("SSE connecting")
             client = sse.connect(sse_url)
-            Logger.debug("SSE connected; next: send net cards info and wait for events")
+            Logger.info("SSE connected; next: send net cards info and wait for events")
 
             send_net_cards(daemon)
 
             # handle received events 
             for event in client.events():
-                Logger.debug(f"Received event: {event.data}")
+                Logger.info(f"Received event: {event.data}")
                 session_id, sse_type = sse.parse_event(event, config.SSE_CHANNELS[0])
                 if sse_type in callbacks:
                     try:

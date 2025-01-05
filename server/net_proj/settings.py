@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-m@xwqr#qib+hm&0li%0hx39)!0*aihg#ky#hryjr=)#ty#@m@n"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -79,13 +79,13 @@ ASGI_APPLICATION = "net_proj.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# TODO read from cmd or config file
+# mysql config: read from cmd or config file
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'network',
-#         'USER': 'root',
-#         'PASSWORD': 'Agenda2022',
+#         'NAME': '',
+#         'USER': '',
+#         'PASSWORD': '',
 #         'HOST': '127.0.0.1',
 #         'PORT': '3306',
 #     }
