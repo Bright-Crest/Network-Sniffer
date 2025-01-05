@@ -111,6 +111,7 @@ async def show_packets(request, session_id):
 
             sniff_session = await sniff_session_objs.afirst()
             context = {
+                "help": {"color": [rule.help_info() for rule in pkt.COLOR_RULES]},
                 "is_history": sniff_session.is_history,
                 "is_stopped": sniff_session.is_stopped,
             }
@@ -120,7 +121,7 @@ async def show_packets(request, session_id):
             async for p in models.Packets.objects.filter(sniff_history_id=session_id).order_by("id"):
                 row = i + 1
                 packet = pkt.import_packet(p.packet)
-                packets.append((row, pkt.dict_summary(packet), pkt.packet2list(packet)))
+                packets.append((row, pkt.dict_summary(packet), pkt.packet2list(packet), pkt.packet_color(packet), pkt.packet_css_class(packet)))
                 i += 1
             context["packets"] = packets
             return render(request, "sniffer/show_packets.html", context)
@@ -135,7 +136,7 @@ async def show_packets(request, session_id):
                     continue
                 row = i + 1
                 packet = pkt.import_packet(p.packet)
-                packets_to_append.append((row, pkt.dict_summary(packet), pkt.packet2list(packet)))
+                packets_to_append.append((row, pkt.dict_summary(packet), pkt.packet2list(packet), pkt.packet_color(packet), pkt.packet_css_class(packet)))
                 i += 1
             return render(request, "sniffer/show_packets_table_rows.html", {"packets": packets_to_append})
 

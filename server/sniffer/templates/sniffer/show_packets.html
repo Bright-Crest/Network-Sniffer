@@ -9,11 +9,12 @@
 {% block content %}
   <div class="container mt-3">
     <h1>抓包结果</h1>
-    <h6 class="text-secondary">推荐停止捕获后再进行查看包等操作，以避免出现页面卡顿等情况</h6>
+    {% if not packets %}
+      <h5 class="text-muted">初始化可能需要几秒钟，请耐心等待</h5>
+    {% endif %}
 
     <div class="sticky-top" style="top: 64.52px;">
-      <div class="mt-3"></div>
-      <div class="py-2">
+      <div class="pt-1 pb-2">
         <div>
           <form id="sseForm" name="sseForm" method="post" novalidate>
             {% csrf_token %}
@@ -24,9 +25,27 @@
           </form>
         </div>
       </div>
+
+      <div class="" role="search">
+        <div class="row">
+          <div class="col-12 d-flex">
+            <input id="inputPacketSearch" class="form-control me-2" type="search" placeholder='示例: "{[src-1.2.3.4, dst-1.2.3.4], {sport-80, dport-443}, [icmp, tcp, udp, http]}"' aria-label="Search">
+            <button type="button" id="buttonPacketSearch" class="btn btn-outline-success text-nowrap" type="submit">应用过滤条件</button>
+          </div>
+        </div> 
+      </div>
     </div>
 
-    <div class="mt-0" style="max-height: 600px; overflow-y: auto;">
+    <div class="text-secondary mt-3">
+      <p class="mb-1">语法: {}中代表and关系，[]中代表or关系，","必须加上以分隔两个表达式。</p>
+      <p class="mb-1">支持过滤：source(src), destination(dst), sport, dport和协议层</p>
+      <p class="mb-1">src和dst支持IP地址和MAC地址，协议层支持scapy定义过的layers (因此这里支持http过滤)</p>
+      <p class="mb-1">内部实现了较为完整的语法解析器，支持复杂的嵌套的过滤条件</p>
+      <p class="mb-1">更多示例: "{[tcp, http], {src-1.2.3.4, dst-4.3.2.1}, {sport-80, dport-80} }"</p>
+      <p class="mb-1">"[http1, {tcp, dport-80}, http2]"</p>
+    </div>
+
+    <div class="mt-2" style="max-height: 600px; overflow-y: auto;">
       <table id="packetsTable" class="table table-hover">
         <thead class="sticky-top" style="z-index: 0;">
           <tr>
@@ -34,7 +53,7 @@
             <th>时间</th>
             <th>Source</th>
             <th>Destination</th>
-            <th>协议</th>
+            <th>包的顶层</th>
             <th>长度</th>
             <th>信息</th>
           </tr>
@@ -44,11 +63,314 @@
         </tbody>
       </table>
     </div>
+
+    <div class="text-secondary mt-3">
+      <p>推荐停止捕获后再进行查看包等操作，以避免出现页面卡顿等情况；若页面卡顿，刷新即可</p>
+      <p>提示：点击表格的行以查看详细信息</p>
+      <p>注意：当抓包数量较大时，页面可能会出现卡顿</p>
+    </div>
+
+    <div class="row">
+      <div class="accordion col-4" id="accordionHelpColor">
+        <div class="accordion-item">
+          <h5 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHelpColor" aria-expanded="false" aria-controls="collapseHelpColor">
+              <strong class="text-secondary">颜色说明</strong>
+            </button>
+          </h5>
+          <div id="collapseHelpColor" class="accordion-collapse collapse" aria-labelledby="headingHelpColor" data-bs-parent="#accordionHelpColor">
+            <div class="accordion-body">
+              {% for color in help.color %}
+                <p class="pb-1 mt-1 mb-0 {{ color.1 }} {% if not forloop.last %}border-bottom{% endif %}"><span class="">{{ color.0 }}</span></p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
   </div>
 {% endblock %}
 
 {% block script %}
   <script type="text/javascript">
+    /////////// enable user-client to search ///////////
+    function find_elements(filter, range) {
+      // find elements in range that match filter
+      // args:
+      //   filter: list
+      //   range: Element
+      // return:
+      //   list of Element
+      // 
+      // list is "or"
+      // dict is "and"
+      // list|dict with all values as string is terminal
+      // 
+      // assume all strings are class name(s) for querySelectorAll
+      // 
+      // recursive implementation to support complicated filter
+      if (filter.length === 0 || filter === [] || filter === null || filter === undefined || filter === '' || filter === {}) {
+        return Array.from(range.querySelectorAll(".table-row-packet"))
+      }
+
+      var elements = []
+      for (var i = 0; i < filter.length; i++) {
+        if (Array.isArray(filter[i])) {
+          elements = elements.concat(find_elements(filter[i], range))
+        } else if (typeof filter[i] === 'string') {
+          elements = elements.concat(Array.from(range.querySelectorAll(filter[i])))
+        } else {
+          // dict
+          var elements_temp = Array.from(range.querySelectorAll(".table-row-packet"))
+          for (let k in filter[i]) {
+            var v = filter[i][k]
+            var elements_temp_temp = []
+            if (Array.isArray(v)) {
+              elements_temp_temp = find_elements(v, range)
+            } else if (typeof v === 'string') {
+              elements_temp_temp = Array.from(range.querySelectorAll(v))
+            } else {
+              // dict
+              elements_temp_temp = find_elements([v], range)
+            }
+
+            elements_temp = elements_temp.filter(function (element) {
+              return elements_temp_temp.includes(element)
+            })
+          }
+          elements = elements.concat(elements_temp)
+        }
+      }
+      return elements
+    }
+
+    function toggle_class(filter, class_name_to_add, class_name_to_remove, targets, range) {
+      // Toggle class of targets according to filter.
+      // Targets that match filter will add class_name_to_add and remove class_name_to_remove;
+      // targets that don't match filter will add class_name_to_remove and remove class_name_to_add;
+      // args:
+      //   filter: list
+      //   class_name_to_add: string
+      //   class_name_to_remove: string
+      //   targets: list of Element; targets to be removed class_name
+      //   range: Element; for find_elements
+      // return:
+      //   None
+      elements = find_elements(filter, range)
+      for (var i = 0; i < targets.length; i++) {
+        if (elements.includes(targets[i])) {
+          targets[i].classList.add(class_name_to_add)
+          targets[i].classList.remove(class_name_to_remove)
+        } else {
+          targets[i].classList.remove(class_name_to_add)
+          targets[i].classList.add(class_name_to_remove)
+        }
+      }
+    }
+
+    function set_display() {
+      $(".table-row-packet.filter-show").show();
+      $(".table-row-packet.filter-hide").hide();
+    }
+
+    function refresh_display() {
+      toggle_class(g_filter, 'filter-show', 'filter-hide', document.getElementsByClassName('table-row-packet'), document)
+      set_display()
+    }
+
+    function bracket_match(string, left) {
+      // return index of matched bracket
+      // args:
+      //   string: string
+      //   left: int; left bracket index
+      // return:
+      //   index of matched bracket
+      // 
+      // assume string is well-formed
+      left_bracket = string[left]
+      right_bracket = undefined
+      switch (left_bracket) {
+        case '{':
+          right_bracket = '}'
+          break
+        case '[':
+          right_bracket = ']'
+          break
+        case '(':
+          right_bracket = ')'
+          break
+        case '<':
+          right_bracket = '>'
+          break
+      }
+      var count = 1
+      for (var i = left + 1; i < string.length; i++) {
+        if (string[i] == left_bracket) {
+          count += 1
+        } else if (string[i] == right_bracket) {
+          count -= 1
+          if (count == 0) {
+            return i
+          }
+        }
+      }
+      return -1
+    }
+
+    function parse_raw_filter(raw_filter) {
+      // parse raw filter to structured filter
+      // args:
+      //   raw_filter: string
+      // return:
+      //   list; structured filter
+      //
+      // input example:
+      // tcp
+      // http
+      // dst-204.79.197.239
+      // {src-1.2.3.4, dst-127.0.0.1, sport-80, dport-443, tcp}
+      // {[src-1.2.3.4, dst-1.2.3.4], {sport-80, dport-443}, [tcp, udp, http]}
+      // 
+      // output example:
+      // ["layer-tcp"]
+      // ["layer-http1"]
+      // ["dst-204-79-197-239"]
+      // [{0: "src-1-2-3-4", 1: "dst-127-0-0-1", 2: "sport-80", 3: "dport-443", 4: "layer-tcp"}]
+      // [{0: ["src-1-2-3-4", "dst-1-2-3-4"]}, {1: "sport-80", 2: "dport-443"}, {3: ["layer-tcp", "layer-udp", "layer-http1"]}]
+
+      const list_bracket = '['
+      const dict_bracket = '{'
+      const delimiter = ','
+      const layer_prefix = 'layer-'
+      const prefixs = ['src', "dst", "sport", "dport", "layer"]
+
+      var is_list = true
+      var filter = undefined
+
+      raw_filter.trim()
+      if (raw_filter == '') {
+        return []
+      }
+      raw_filter = raw_filter.replaceAll(".", "-").replaceAll(":", "-").toLowerCase()
+
+      const head_bracket = raw_filter[0]
+      if (head_bracket == list_bracket) {
+        is_list = true
+        filter = []
+      } else if (head_bracket == dict_bracket) {
+        is_list = false
+        filter = {}
+      } else {
+        is_list = true
+        filter = []
+      }
+
+      if (raw_filter[0] == list_bracket || raw_filter[0] == dict_bracket) {
+        if (bracket_match(raw_filter, 0) !== raw_filter.length - 1) {
+          console.log('wrong filter syntax: head bracket not matched in', raw_filter)
+        }
+        raw_filter = raw_filter.substring(1, raw_filter.length - 1).trim()
+
+        cnt = -1
+        while (raw_filter != '') {
+          cnt++
+          if (raw_filter[0] == list_bracket || raw_filter[0] == dict_bracket) {
+            bracket = raw_filter[0]
+            right = bracket_match(raw_filter, 0)
+            if (right == -1) {
+              console.log('wrong filter syntax: bracket not matched in ', raw_filter)
+            }
+            if (is_list) {
+              filter.push(parse_raw_filter(raw_filter.substring(0, right + 1).trim()))
+            } else {
+              filter[cnt] = parse_raw_filter(raw_filter.substring(0, right + 1).trim())
+            }
+            raw_filter = raw_filter.substring(right + 1).trim()
+
+            // twice
+            delimiter_idx = raw_filter.indexOf(delimiter)
+            raw_filter = raw_filter.substring(delimiter_idx + 1).trim()
+            delimiter_idx = raw_filter.indexOf(delimiter)
+            raw_filter = raw_filter.substring(delimiter_idx + 1).trim()
+          } else {
+            delimiter_idx = raw_filter.indexOf(delimiter)
+            if (delimiter_idx == -1) {
+              if (is_list) {
+                filter.push(raw_filter)
+              } else {
+                filter[cnt] = raw_filter
+              }
+              break
+            }
+            if (is_list) {
+              filter.push(raw_filter.substring(0, delimiter_idx))
+            } else {
+              filter[cnt] = raw_filter.substring(0, delimiter_idx)
+            }
+            raw_filter = raw_filter.substring(delimiter_idx + 1).trim()
+          }
+        }
+      } else {
+        if (is_list) {
+          filter.push(raw_filter)
+        } else {
+          filter[0] = raw_filter
+        }
+      }
+
+      // ensure same behavior for both list and dict
+      if (is_list) {
+        for (var i = 0; i < filter.length; i++) {
+          item = filter[i]
+          if (item === "http") {
+            item = "." + layer_prefix + "http1" + ", ." + layer_prefix + "http2frame"
+          } else if (item === "http2") {
+            item = "." + layer_prefix + "http2frame"
+          } else if (typeof item === 'string') {
+            if (!prefixs.includes(item.substring(0, item.indexOf('-')))) {
+              item = layer_prefix + item
+            }
+            item = item.replaceAll(' ', "")
+            item = "." + item
+          }
+          filter[i] = item
+        }
+      } else {
+        for (var key in filter) {
+          item = filter[key]
+          if (item === "http") {
+            item = "." + layer_prefix + "http1" + ", ." + layer_prefix + "http2frame"
+          } else if (item === "http2") {
+            item = "." + layer_prefix + "http2frame"
+          } else if (typeof item === 'string') {
+            if (!prefixs.includes(item.substring(0, item.indexOf('-')))) {
+              item = layer_prefix + item
+            }
+            item = item.replaceAll(' ', "")
+            item = "." + item
+          }
+          filter[key] = item
+        }
+      }
+
+      return filter
+    }
+
+    function update_filter(raw_filter) {
+      console.log('update filter with: ', raw_filter)
+      var filter = parse_raw_filter(raw_filter)
+      if (Array.isArray(filter)) {
+        g_filter = filter
+      } else {
+        g_filter = [filter]
+      }
+      console.log('new filter: ', g_filter)
+      refresh_display()
+    }
+
+
     function sendFormXhr(formData, url) {
       // 不刷新页面提交
       let xhr = new XMLHttpRequest()
@@ -80,6 +402,8 @@
     
     is_stopped = {% if is_stopped %} true {% else %} false {% endif %}
 
+    g_filter = []
+
     const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 
     $(document).ready(function () {
@@ -87,6 +411,17 @@
         sendFormXhr(fillFrom('sseForm', { sseData: 'stop' }), '{{ request.get_full_path }}')
         is_stopped = true
         $(this).prop('disabled', true)
+      })
+      $('#buttonPacketSearch').click(function () {
+        raw_filter = $('#inputPacketSearch').val()
+        update_filter(raw_filter)
+      })
+      $('#inputPacketSearch').keypress(function (e) {
+        if (e.which === 13) {
+          // Enter key pressed
+          raw_filter = $('#inputPacketSearch').val()
+          update_filter(raw_filter)
+        }
       })
     })
     
@@ -113,6 +448,7 @@
               last_row_element.classList.remove('last-row')
             }
             window.document.getElementById('packetsTable').innerHTML += xhr.responseText
+            refresh_display()
             console.log('update page without refresh')
           }
           return true

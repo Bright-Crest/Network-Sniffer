@@ -1,92 +1,91 @@
-{% for row, packet_summary, packet in packets %}
-  <tr id="row_{{ row }}" class="{% if forloop.last %}last-row{% endif %}"  data-bs-toggle="offcanvas" data-bs-target="#offcanvas_{{ row }}" aria-controls="offcanvas_{{ row }}">
-    <td>{{ row }}</td>
-    <td>{{ packet_summary.time }}</td>
-    <td>{{ packet_summary.source }}</td>
-    <td>{{ packet_summary.destination }}</td>
-    <td>{{ packet_summary.protocol }}</td>
-    <td>{{ packet_summary.length }}</td>
-    <td>{{ packet_summary.info }}</td>
+{% for row, packet_summary, packet, color, filter_class in packets %}
+  <tr id="row_{{ row }}" class="table-row-packet {{ filter_class }} {% if forloop.last %}last-row{% endif %}" data-bs-toggle="offcanvas" data-bs-target="#offcanvas_{{ row }}" aria-controls="offcanvas_{{ row }}">
+    <td class="{{ color }}">{{ row }}</td>
+    <td class="{{ color }}">{{ packet_summary.time }}</td>
+    <td class="{{ color }}">{{ packet_summary.source }}</td>
+    <td class="{{ color }}">{{ packet_summary.destination }}</td>
+    <td class="{{ color }}">{{ packet_summary.protocol }}</td>
+    <td class="{{ color }}">{{ packet_summary.length }}</td>
+    <td class="{{ color }}">{{ packet_summary.info }}</td>
+  </tr>
 
-    <div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvas_{{ row }}" aria-labelledby="offcanvasLabel_{{ row }}">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasLabel_{{ row }}">序号为{{ row }}的包</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas_{{ row }}" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body">
+  <div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvas_{{ row }}" aria-labelledby="offcanvasLabel_{{ row }}">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasLabel_{{ row }}">序号为{{ row }}的包</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#offcanvas_{{ row }}" aria-label="Close"></button>
+    </div>
 
-        <div class="accordion text-break" id="accordion_{{ row }}">
-          {% for layer in packet %}
-            <div class="accordion-item">
-              <h2 class="accordion-header">
-                <button class="accordion-button" type="button" collapsed data-bs-toggle="collapse" data-bs-target="#accordionPanel_{{ row }}_{{ forloop.counter}}" aria-controls="accordionPanel_{{ row }}_{{ forloop.counter}}">
-                  <strong>{{ layer.name }}:</strong>&nbsp;{{ layer.summary }}
-                </button>
-              </h2>
-              <div id="accordionPanel_{{ row }}_{{ forloop.counter}}" class="accordion-collapse collapse">
-                <div class="accordion-body vstack gap-0 pt-2 pb-2">
-                  {% for k, v in layer.items %}
-                    {% if k != "summary" and k != "name" %}
-                      {% if v.copy is None %}
-                        {% comment "v is string" %}{% endcomment %}
-                        <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
-                          <p class="mb-0">{{ k }}: {% autoescape off %}{{ v }}{% endautoescape %}</p>
-                        </div>
-                      {% else %}
-                        {% comment "v is list or dict" %}{% endcomment %}
+    <div class="offcanvas-body">
+      <div class="accordion text-break" id="accordion_{{ row }}">
+        {% for layer in packet %}
 
-                        <div class="accordion-flush">
-                          <div class="accordion-item">
-                            <p class="accordion-header">
-                              <button class="accordion-button py-1 ps-2" type="button" collapsed data-bs-toggle="collapse" data-bs-target="#accordionPanel_{{ row }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" aria-controls="accordionPanel_{{ row }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
-                                {{ k }}
-                              </button>
-                            </p>
-                            <div id="accordionPanel_{{ row }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" class="accordion-collapse collapse">
-                              <div class="accordion-body vstack gap-0 pt-1 pb-1">
-                                {% if v.items is None %}
-                                  {% comment "v is list" %}{% endcomment %}
-                                  {% for sub in v %}
-                                    <div>
-                                      {% if sub.items is None %}
-                                        {% comment "sub is string" %}{% endcomment %}
+          <div class="accordion-item">
+            <h2 class="accordion-header"><button class="accordion-button" type="button" collapsed data-bs-toggle="collapse" data-bs-target="#accordionPanel_{{ row }}_{{ forloop.counter }}" aria-controls="accordionPanel_{{ row }}_{{ forloop.counter }}"><strong>{{ layer.name }}:</strong>&nbsp;{{ layer.summary }}</button></h2>
+            <div id="accordionPanel_{{ row }}_{{ forloop.counter }}" class="accordion-collapse collapse">
+              <div class="accordion-body vstack gap-0 pt-2 pb-2">
+                {% for k, v in layer.items %}
+                  {% if k != 'summary' and k != 'name' %}
+
+                    {% if v.copy is None %}
+                      {% comment 'v is string' %}{% endcomment %}
+                      <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
+                        <p class="mb-0">
+                          {{ k }}:{% autoescape off %}
+                            {{ v }}
+                          {% endautoescape %}
+                        </p>
+                      </div>
+
+                    {% else %}
+                      {% comment 'v is list or dict' %}{% endcomment %}
+                      <div class="accordion-flush">
+                        <div class="accordion-item">
+                          <p class="accordion-header">
+                            <button class="accordion-button py-1 ps-2" type="button" collapsed data-bs-toggle="collapse" data-bs-target="#accordionPanel_{{ row }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" aria-controls="accordionPanel_{{ row }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">{{ k }}</button>
+                          </p>
+                          <div id="accordionPanel_{{ row }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" class="accordion-collapse collapse">
+                            <div class="accordion-body vstack gap-0 pt-1 pb-1">
+
+                              {% if v.items is None %}
+                                {% comment 'v is list' %}{% endcomment %}
+                                {% for sub in v %}
+                                  <div>
+                                    {% if sub.items is None %}
+                                      {% comment 'sub is string' %}{% endcomment %}
+                                      <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
+                                        <p class="mb-0">{{ sub }}</p>
+                                      </div>
+                                    {% else %}
+                                      {% comment 'sub is dict' %}{% endcomment %}
+                                      {% for subk, subv in sub.items %}
                                         <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
-                                          <p class="mb-0">{{ sub }}</p>
+                                          <p class="mb-0">{{ subk }}: {{ subv }}</p>
                                         </div>
-                                      {% else %}
-                                        {% comment "sub is dict" %}{% endcomment %}
-                                        {% for subk, subv in sub.items %}
-                                          <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
-                                            <p class="mb-0">{{ subk }}: {{ subv }}</p>
-                                          </div>
-                                        {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                  {% endfor %}
+                                      {% endfor %}
+                                    {% endif %}
+                                  </div>
+                                {% endfor %}
 
-                                {% else %}
-                                  {% comment "v is dict" %}{% endcomment %}
-                                  {% for subk, subv in v.items %}
-                                    <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
-                                      <p class="mb-0">{{ subk }}: {{ subv }}</p>
-                                    </div>
-                                  {% endfor %}
-                                {% endif %}
-                              </div>
+                              {% else %}
+                                {% comment 'v is dict' %}{% endcomment %}
+                                {% for subk, subv in v.items %}
+                                  <div class="pb-1 mt-1 {% if not forloop.last %}border-bottom{% endif %}">
+                                    <p class="mb-0">{{ subk }}: {{ subv }}</p>
+                                  </div>
+                                {% endfor %}
+                              {% endif %}
                             </div>
                           </div>
                         </div>
-
-                      {% endif %}
+                      </div>
                     {% endif %}
-                  {% endfor %}
-                </div>
+                  {% endif %}
+                {% endfor %}
               </div>
             </div>
-          {% endfor %}
-        </div>
-
+          </div>
+        {% endfor %}
       </div>
     </div>
-  </tr>
+  </div>
 {% endfor %}

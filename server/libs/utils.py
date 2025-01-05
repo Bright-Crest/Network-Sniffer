@@ -1,3 +1,34 @@
+def decode_all_bytes(dict_: dict, is_decode_keys: bool = True, is_decode_values: bool = True, encoding: str = "utf-8"):
+    # type: (dict, bool, bool, str) -> dict
+    new_dict = dict()
+    for k, v in dict_.items():
+        k = k.decode() if isinstance(k, bytes) and is_decode_keys else k
+        v = v.decode() if isinstance(v, bytes) and is_decode_values else v
+        if isinstance(v, dict):
+            v = decode_all_bytes(v, is_decode_keys, is_decode_values, encoding)
+        new_dict[k] = v
+    return new_dict
+
+
+def bytes2hex(b, is_for_display: bool = True, is_for_web_display: bool = True, is_break_at_first: bool = True):
+    # type: (bytes|str, bool, bool, bool) -> str
+    if isinstance(b, str):
+        b = bytes(b, "utf-8")
+    if is_for_display:
+        hex_str = "" if not is_break_at_first else ("<br>" if is_for_web_display else "\n")
+        for i, byte in enumerate(b):
+            hex_str += f"{byte:02x}"
+            if i % 16 == 15:
+                hex_str += "<br>" if is_for_web_display else "\n"
+            elif i % 8 == 7:
+                hex_str += "&ensp;&ensp;" if is_for_web_display else "  "
+            else:
+                hex_str += "&ensp;" if is_for_web_display else " "
+        return hex_str.strip()
+    else:
+        return b.hex()
+
+
 def set_default(dict_:dict, key, value):
     '''
     与python内置的setdefault的区别是：要检查key对应的value是否为None
