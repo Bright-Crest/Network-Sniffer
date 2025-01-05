@@ -17,8 +17,9 @@ Windows：
 Linux：
 
 1. 打开`shell`
-2.  激活python环境
-3. 运行后缀名为`sh`的脚本（python包scapy部分功能可能需要管理员权限）
+2. 激活python环境
+3. 添加`sh`脚本运行权限 `chmod u+x setup.sh run_all.sh run_server.sh run_client.sh`
+4. 运行后缀名为`sh`的脚本（python包scapy部分功能可能需要管理员权限）
 
 
 
