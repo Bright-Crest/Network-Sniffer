@@ -10,7 +10,7 @@
   <div class="container mt-3">
     <h1>抓包结果</h1>
     {% if not packets %}
-      <h5 class="text-muted">初始化可能需要几秒钟，请耐心等待</h5>
+      <h5 id="initialHelp" class="text-muted">初始化可能需要几秒钟，请耐心等待</h5>
     {% endif %}
 
     <div class="sticky-top" style="top: 64.52px;">
@@ -43,6 +43,7 @@
       <p class="mb-1">内部实现了较为完整的语法解析器，支持复杂的嵌套的过滤条件</p>
       <p class="mb-1">更多示例: "{[tcp, http], {src-1.2.3.4, dst-4.3.2.1}, {sport-80, dport-80} }"</p>
       <p class="mb-1">"[http1, {tcp, dport-80}, http2]"</p>
+      <p class="mb-1">"[icmp, {tcp, [src-1.2.3.4, {sport-80, http1}, http2]}]"</p>
     </div>
 
     <div class="mt-2" style="max-height: 600px; overflow-y: auto;">
@@ -219,7 +220,7 @@
       return -1
     }
 
-    function parse_raw_filter(raw_filter) {
+    function parse_raw_filter(raw_filter_) {
       // parse raw filter to structured filter
       // args:
       //   raw_filter: string
@@ -239,6 +240,8 @@
       // ["dst-204-79-197-239"]
       // [{0: "src-1-2-3-4", 1: "dst-127-0-0-1", 2: "sport-80", 3: "dport-443", 4: "layer-tcp"}]
       // [{0: ["src-1-2-3-4", "dst-1-2-3-4"]}, {1: "sport-80", 2: "dport-443"}, {3: ["layer-tcp", "layer-udp", "layer-http1"]}]
+      let raw_filter = raw_filter_
+      console.log("parse_raw_filter", raw_filter)
 
       const list_bracket = '['
       const dict_bracket = '{'
@@ -273,13 +276,13 @@
         }
         raw_filter = raw_filter.substring(1, raw_filter.length - 1).trim()
 
-        cnt = -1
-        while (raw_filter != '') {
+        var cnt = -1
+        while (raw_filter !== '') {
           cnt++
           if (raw_filter[0] == list_bracket || raw_filter[0] == dict_bracket) {
-            bracket = raw_filter[0]
-            right = bracket_match(raw_filter, 0)
-            if (right == -1) {
+            var right = bracket_match(raw_filter, 0)
+            console.log("parse_raw_filter raw_filter: ", raw_filter, "; right_bracket index: ", right)
+            if (right === -1) {
               console.log('wrong filter syntax: bracket not matched in ', raw_filter)
             }
             if (is_list) {
@@ -289,14 +292,13 @@
             }
             raw_filter = raw_filter.substring(right + 1).trim()
 
-            // twice
-            delimiter_idx = raw_filter.indexOf(delimiter)
-            raw_filter = raw_filter.substring(delimiter_idx + 1).trim()
-            delimiter_idx = raw_filter.indexOf(delimiter)
+            console.log("parse_raw_filter after right bracket: ", raw_filter)
+
+            var delimiter_idx = raw_filter.indexOf(delimiter)
             raw_filter = raw_filter.substring(delimiter_idx + 1).trim()
           } else {
-            delimiter_idx = raw_filter.indexOf(delimiter)
-            if (delimiter_idx == -1) {
+            var delimiter_idx = raw_filter.indexOf(delimiter)
+            if (delimiter_idx === -1) {
               if (is_list) {
                 filter.push(raw_filter)
               } else {
@@ -323,7 +325,7 @@
       // ensure same behavior for both list and dict
       if (is_list) {
         for (var i = 0; i < filter.length; i++) {
-          item = filter[i]
+          var item = filter[i]
           if (item === "http") {
             item = "." + layer_prefix + "http1" + ", ." + layer_prefix + "http2frame"
           } else if (item === "http2") {
@@ -339,7 +341,7 @@
         }
       } else {
         for (var key in filter) {
-          item = filter[key]
+          var item = filter[key]
           if (item === "http") {
             item = "." + layer_prefix + "http1" + ", ." + layer_prefix + "http2frame"
           } else if (item === "http2") {
@@ -447,6 +449,7 @@
             if (last_row_element) {
               last_row_element.classList.remove('last-row')
             }
+            $('#initialHelp').remove()
             window.document.getElementById('packetsTable').innerHTML += xhr.responseText
             refresh_display()
             console.log('update page without refresh')
